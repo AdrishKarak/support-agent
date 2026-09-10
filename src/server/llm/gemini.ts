@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import 'dotenv/config';
+import { embeddingCache } from '../cache';
 
 let genAIInstance: GoogleGenerativeAI | null = null;
 
@@ -15,6 +16,10 @@ function getGenAIClient(): GoogleGenerativeAI {
 }
 
 export async function embedQuery(text: string): Promise<number[]> {
+  // Check embedding cache first
+  const cached = embeddingCache.get(text);
+  if (cached) return cached;
+
   const genAI = getGenAIClient();
   const embModel = genAI.getGenerativeModel({ model: 'gemini-embedding-2' });
 
@@ -27,7 +32,9 @@ export async function embedQuery(text: string): Promise<number[]> {
         content: { role: 'user', parts: [{ text }] },
         outputDimensionality: 768,
       } as any);
-      return res.embedding.values;
+      const embedding = res.embedding.values;
+      embeddingCache.set(text, embedding);
+      return embedding;
     } catch (err: any) {
       retries--;
       if (retries === 0) {

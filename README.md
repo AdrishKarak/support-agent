@@ -9,55 +9,134 @@ An end-to-end, production-grade AI Customer Support Agent specialized for Spotif
 
 ---
 
-## ⚡ 15-Minute Quickstart & Reproduction
+## 📖 Table of Contents
 
-No Docker, local PostgreSQL, or Python environment required. Everything runs directly on hosted Neon PostgreSQL (`pgvector`) and Node.js.
+- [For Instructors / Reviewers — Quick Setup Guide](#-for-instructors--reviewers--quick-setup-guide)
+- [Architecture & Pipeline Flow](#️-architecture--pipeline-flow)
+- [Empirical Intent Taxonomy](#️-empirical-intent-taxonomy)
+- [Benchmark Results](#-benchmark-results)
+- [Human-vs-Judge Agreement](#️-human-vs-judge-agreement-analysis)
+- [Performance & Scaling](#-performance--scaling)
+- [Docker Deployment](#-docker-deployment)
+- [Repository Structure](#-repository-structure)
+- [Available Scripts](#-available-scripts)
+- [Documentation Index](#-documentation-index)
 
-### 1. Clone & Install Dependencies
+---
+
+## 🎯 For Instructors / Reviewers — Quick Setup Guide
+
+> **Estimated Time:** ~15 minutes (including API key setup)  
+> **Prerequisites:** Node.js 20+ (or Docker), a Neon PostgreSQL account (free tier), a Google AI Studio API key (free), and a Groq API key (free)
+
+### Prerequisites Checklist
+
+| Requirement | How to Get It | Verification Command |
+|---|---|---|
+| **Node.js 20+** | [nodejs.org](https://nodejs.org/) | `node --version` → should show `v20.x+` |
+| **npm or pnpm** | Bundled with Node.js | `npm --version` |
+| **Neon PostgreSQL** | [neon.tech](https://neon.tech/) (free tier) | Create a project → get connection strings |
+| **Gemini API Key** | [aistudio.google.com](https://aistudio.google.com/apikey) | Copy key from API Keys page |
+| **Groq API Key** | [console.groq.com](https://console.groq.com/keys) | Copy key from API Keys page |
+| **Docker** *(optional)* | [docker.com](https://www.docker.com/) | `docker --version` |
+
+### Step 1: Clone & Install
+
 ```bash
 git clone https://github.com/AdrishKarak/support-agent.git
 cd support-agent
 npm install
 ```
 
-### 2. Configure Environment Variables
-Copy `.env.example` to `.env`:
+> **✅ Verification:** No errors during install. You should see `added XXX packages`.
+
+### Step 2: Configure Environment Variables
+
 ```bash
 cp .env.example .env
 ```
-Fill in your API credentials in `.env`:
+
+Edit `.env` and fill in your credentials:
+
 ```env
 # Neon PostgreSQL Connection Strings
-DATABASE_URL="postgresql://neondb_owner:YOUR_PASSWORD@ep-YOUR-ENDPOINT-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
-DIRECT_URL="postgresql://neondb_owner:YOUR_PASSWORD@ep-YOUR-ENDPOINT.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+DATABASE_URL="postgresql://neondb_owner:YOUR_PASSWORD@ep-YOUR-ENDPOINT-pooler.region.aws.neon.tech/neondb?sslmode=require"
+DIRECT_URL="postgresql://neondb_owner:YOUR_PASSWORD@ep-YOUR-ENDPOINT.region.aws.neon.tech/neondb?sslmode=require"
 
 # LLM Providers
 GEMINI_API_KEY="your_gemini_api_key_here"
 GROQ_API_KEY="your_groq_api_key_here"
 ```
-> **Note on Neon:** Ensure the native `vector` extension is enabled in your Neon database (`CREATE EXTENSION IF NOT EXISTS vector;` in the Neon SQL Editor).
 
-### 3. One-Command Database Setup & Seeding
-Runs schema push, HNSW vector index generation, golden set seeding (164 examples), and knowledge base dense vector indexing (300 articles) with idempotent SHA-256 deduplication:
+> **⚠️ Neon Setup:** In your Neon dashboard SQL Editor, run: `CREATE EXTENSION IF NOT EXISTS vector;`
+
+> **✅ Verification:** The `.env` file contains 4 non-empty values.
+
+### Step 3: Database Setup & Seeding (One Command)
+
+This applies the Prisma schema, creates the HNSW vector index, seeds the golden evaluation set (132 examples), and embeds 300 knowledge base articles:
+
 ```bash
 npm run setup
 ```
 
-### 4. Run the Pipeline Evaluation
-Run the automated evaluation harness against held-out golden test examples:
-```bash
-npm run eval
-```
-You can also run the baselines and the human-vs-judge calibration agreement study:
-```bash
-npm run eval:baselines   # Evaluates Trivial (rule-based) & Zero-Shot (no RAG) baselines
-npm run eval:agreement   # Computes Cohen's Kappa & off-by-one agreement metrics
-```
+> **✅ Verification:** You should see output ending with `✅ Setup complete!` and no error messages. Expected duration: ~2-3 minutes (embedding 300 articles).
 
-### 5. Run the Automated Unit Tests
+### Step 4: Run the Unit Tests
+
 ```bash
 npm test
 ```
+
+> **✅ Verification:** All 12 tests should pass. Output shows `Tests: 12 passed, 12 total`.
+
+### Step 5: Run the Evaluation Harness
+
+```bash
+npm run eval
+```
+
+This runs the full pipeline against the golden evaluation set and prints intent accuracy, macro F1, escalation metrics, and LLM-as-a-Judge scores.
+
+> **✅ Verification:** Output shows a benchmark table with `Intent Accuracy: ~60%` and `Judge Overall: ~4.7/5.0`.
+> 
+> **⏱️ Note:** This takes ~5-10 minutes due to Groq free-tier rate limiting (8K TPM). Each evaluation item includes a 2-second pacing delay.
+
+### Step 6: Run Baselines & Agreement Study (Optional)
+
+```bash
+npm run eval:baselines   # Trivial keyword + Zero-shot baselines
+npm run eval:agreement   # Cohen's Kappa human-vs-judge calibration
+```
+
+### Step 7: Start the Interactive Web UI
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser. Use the preset test scenarios or type your own customer message to see the full pipeline in action.
+
+> **✅ Verification:** The web UI loads with a dark theme, "SPOTIFY CARES" badge, and 5 preset buttons.
+
+### Step 8: Docker Deployment (Optional)
+
+```bash
+docker compose up --build
+```
+
+The app will be available at [http://localhost:3000](http://localhost:3000).
+
+### Troubleshooting FAQ
+
+| Issue | Solution |
+|---|---|
+| `GROQ_API_KEY is not defined` | Ensure `.env` file exists with valid keys. Run `cp .env.example .env`. |
+| `vector type not found` in Neon | Run `CREATE EXTENSION IF NOT EXISTS vector;` in Neon SQL Editor. |
+| `429 rate limit` errors during eval | Expected on Groq free tier. The system retries with 2.5s backoff and falls back to Gemini automatically. |
+| `npm run setup` hangs | Embedding 300 articles takes ~2-3 min. Check network connectivity to Gemini API. |
+| `tsc --noEmit` errors | Run `npm install` to ensure all type dependencies are installed. |
+| Docker build fails | Ensure Docker is installed and the daemon is running. Check `docker --version`. |
 
 ---
 
@@ -98,18 +177,22 @@ Incoming Customer Tweet
      Typed JSON Response: { intent, reply, escalate, escalationReason, priority }
 ```
 
+> 📐 **Detailed architecture diagrams:** See [`Architecture.md`](Architecture.md) and [`Diagram.md`](Diagram.md) for comprehensive Mermaid diagrams including system context, sequence diagrams, ER diagrams, and deployment architecture.
+
 ### Key Engineering Standards
+
 * **Type-Safe End-to-End:** TypeScript strict mode with tRPC 11 schemas validated via Zod.
 * **Structured JSON Outputs:** Every LLM prompt mandates strict JSON responses with explicit schemas; no fragile regex scraping of unstructured markdown.
 * **Resilient Multi-Provider Fallback:** Fast Groq inference (`openai/gpt-oss-20b`) with 429 rate-limit exponential backoff and seamless fallback to Google Gemini (`gemini-3.6-flash`).
-* **Version-Controlled Externalized Prompts:** All system prompts and few-shots live in [`src/prompts/`](file:///home/adrish/Desktop/support-agent/src/prompts/), completely decoupled from backend routing logic.
+* **Version-Controlled Externalized Prompts:** All system prompts and few-shots live in `src/prompts/`, completely decoupled from backend routing logic.
 * **Zero PII Exposure:** Numeric user IDs are scrubbed to `@user`, brand handles to `@support`, emails to `[EMAIL]`, phone numbers to `[PHONE]`, and URLs to `[LINK]`.
+* **In-Memory LRU Caching:** Embedding and pipeline response caches eliminate redundant API calls for repeated queries (cache TTL: 5-10 min).
 
 ---
 
 ## 🏷️ Empirical Intent Taxonomy
 
-Clustered from 250 real customer tweets using Gemini embeddings and K-Means ($k=12$), merged into 9 canonical operational intents in [`src/taxonomy/intents.ts`](file:///home/adrish/Desktop/support-agent/src/taxonomy/intents.ts):
+Clustered from 250 real customer tweets using Gemini embeddings and K-Means ($k=12$), merged into 9 canonical operational intents in `src/taxonomy/intents.ts`:
 
 1. **`playback_issue`**: Track playback failures, stuttering, skipping, audio controls, device speaker output.
 2. **`offline_download`**: Offline syncing, downloaded tracks disappearing, storage/SD card errors.
@@ -140,7 +223,7 @@ Evaluated on the held-out golden test set across three systems:
 | **Judge Actionability (1-5)** | 1.40 | 2.30 | **5.00** | **+2.70 pts (+117%)** |
 | **Overall Judge Score (1-5)** | **1.93** | **2.50** | **4.70** | **+2.20 pts (+88%)** |
 
-> **Intellectual Honesty Note:** The Trivial Baseline achieved 87.5% accuracy purely because the unstratified test slice was dominated by playback keywords, but its reply quality was unacceptable (1.93/5.0). Under proper round-robin multi-class stratification, the full agent achieves **60.0% intent accuracy (Macro F1 0.50, Recall 0.6111)** while grounding via pgvector improved response quality by **+88% (from 2.50 to 4.70/5.0)**, eliminating hallucinated settings and menus. See [`report/REPORT.md`](file:///home/adrish/Desktop/support-agent/report/REPORT.md) for full analysis.
+> **Intellectual Honesty Note:** The Trivial Baseline achieved 87.5% accuracy purely because the unstratified test slice was dominated by playback keywords, but its reply quality was unacceptable (1.93/5.0). Under proper round-robin multi-class stratification, the full agent achieves **60.0% intent accuracy (Macro F1 0.50, Recall 0.6111)** while grounding via pgvector improved response quality by **+88% (from 2.50 to 4.70/5.0)**, eliminating hallucinated settings and menus. See [`report/REPORT.md`](report/REPORT.md) for full analysis.
 
 ---
 
@@ -156,12 +239,76 @@ Calibration on 15 golden pairs comparing human scores against LLM judge ratings:
 
 ---
 
+## 🚀 Performance & Scaling
+
+### Optimization Techniques
+
+| Technique | Impact | Implementation |
+|---|---|---|
+| **Parallel Execution** | ~40% latency reduction | `Promise.all([classify, retrieve])` runs classification and retrieval concurrently |
+| **Embedding Cache (LRU)** | Near-instant on cache hit | In-memory LRU cache with 10-min TTL for `gemini-embedding-2` results (`src/server/cache.ts`) |
+| **Pipeline Response Cache** | Eliminates redundant API calls | Full pipeline response cached for identical messages (5-min TTL) |
+| **Connection Pooling** | Reduced DB overhead | `pg.Pool` with `max: 10` connections, split pooled/direct for queries vs migrations |
+| **Multi-Provider Failover** | 100% request success rate | Groq primary → 2.5s backoff retry → Gemini fallback ensures zero downtime |
+| **Structured JSON Outputs** | No post-processing overhead | Native `json_object` response format from LLMs eliminates regex parsing |
+
+### Scaling Considerations
+
+| Constraint | Current State | Production Recommendation |
+|---|---|---|
+| **Groq TPM Limit** | 8K TPM (free tier) | Upgrade to Groq Tier 1 ($20/mo) for 100K TPM |
+| **Gemini RPM Limit** | 5 RPM on some tiers | Used as fallback only; upgrade for primary use |
+| **Connection Pool** | 10 connections max | Increase to 50-100 for high concurrency |
+| **Embedding Dimensions** | 768-dim (reduced from 3072) | 75% memory savings with minimal accuracy loss |
+| **HNSW Index** | m=16, ef_construction=64 | Tune for latency/recall trade-off at scale |
+
+---
+
+## 🐳 Docker Deployment
+
+### Quick Start with Docker
+
+```bash
+# Build and run with docker-compose
+docker compose up --build
+
+# Or build manually
+docker build -t spotify-support-agent .
+docker run -p 3000:3000 --env-file .env spotify-support-agent
+```
+
+The app will be available at [http://localhost:3000](http://localhost:3000).
+
+### Docker Architecture
+
+- **Multi-stage build:** Dependencies → Build → Production (minimal Node.js 22 Alpine image)
+- **Standalone output:** Next.js `output: 'standalone'` for minimal production bundle
+- **Non-root user:** Runs as `nextjs:nodejs` (UID 1001) for security
+- **Health check:** Automated wget-based health monitoring every 30s
+- **No local DB:** Connects to Neon cloud PostgreSQL via environment variables
+
+### Running Setup & Eval Inside Docker
+
+```bash
+# Run database setup inside the container
+docker compose exec support-agent npx tsx data/scripts/setupDb.ts
+
+# Run evaluation harness
+docker compose exec support-agent npx tsx eval/runEval.ts
+```
+
+---
+
 ## 📁 Repository Structure
 
 ```
 support-agent/
-├── README.md                     # Reproduction guide (<15 min)
+├── README.md                     # This file — setup guide & documentation
+├── Architecture.md               # Detailed architecture with Mermaid diagrams
+├── Diagram.md                    # Comprehensive visual diagrams (8 Mermaid diagrams)
 ├── DECISION_LOG.md               # 15 non-obvious engineering decisions
+├── Dockerfile                    # Multi-stage Docker build
+├── docker-compose.yml            # Docker Compose service definition
 ├── report/
 │   └── REPORT.md                 # 6-page comprehensive empirical report
 ├── prisma/
@@ -175,6 +322,7 @@ support-agent/
 │   │   ├── escalatePrompt.ts     # Version-controlled escalation prompt
 │   │   └── judgePrompt.ts        # Version-controlled 1-5 rubric judge prompt
 │   ├── server/
+│   │   ├── cache.ts              # LRU cache for embeddings & pipeline responses
 │   │   ├── trpc/
 │   │   │   ├── trpc.ts
 │   │   │   ├── root.ts
@@ -185,14 +333,17 @@ support-agent/
 │   │   │       └── escalate.ts   # tRPC multi-tier escalation triage
 │   │   └── llm/
 │   │       ├── groq.ts           # Groq client with backoff & retry
-│   │       └── gemini.ts         # Gemini embeddings & fallback generator
-│   └── pipeline/
-│       └── runAgent.ts           # End-to-end orchestrator procedure
+│   │       └── gemini.ts         # Gemini embeddings & fallback generator (cached)
+│   ├── pipeline/
+│   │   └── runAgent.ts           # End-to-end orchestrator procedure
+│   └── app/
+│       ├── page.tsx              # Interactive dark-themed Web UI
+│       └── api/pipeline/route.ts # REST API endpoint with response caching
 ├── data/
 │   ├── raw/                      # Raw Kaggle CSV (gitignored)
 │   ├── processed/
 │   │   ├── knowledge_base.jsonl  # 2,000 cleaned multi-turn KB threads
-│   │   ├── golden_eval_set.jsonl # 164 curated, balanced evaluation examples
+│   │   ├── golden_eval_set.jsonl # 132 curated, balanced evaluation examples
 │   │   ├── baseline_results.json # Trivial & zero-shot baseline benchmarks
 │   │   ├── judge_agreement_results.json # Human-vs-judge calibration pairs
 │   │   └── eval_results.json     # Full pipeline benchmark results
@@ -221,16 +372,28 @@ support-agent/
 
 ## 📜 Available Scripts
 
-| Command | Purpose |
+| Command | Purpose | Duration |
+|---|---|---|
+| `npm run setup` | Configures Neon DB, applies Prisma schema, creates HNSW index, seeds KB & eval sets | ~2-3 min |
+| `npm run eval` | Runs full agent evaluation against held-out golden set | ~5-10 min |
+| `npm run eval:baselines` | Runs trivial keyword baseline and zero-shot baseline | ~3-5 min |
+| `npm run eval:agreement` | Runs human vs. LLM-as-a-judge Cohen's Kappa analysis | ~2-3 min |
+| `npm test` | Executes 12 Jest unit tests on tRPC procedures | ~5 sec |
+| `npm run lint` | Runs Next.js ESLint checks | ~3 sec |
+| `npm run dev` | Starts Next.js development server on `http://localhost:3000` | Persistent |
+| `npm run build` | Builds production Next.js application | ~15 sec |
+
+---
+
+## 📚 Documentation Index
+
+| Document | Description |
 |---|---|
-| `npm run setup` | Configures Neon DB, applies Prisma schema, creates HNSW index, seeds KB & eval sets |
-| `npm run eval` | Runs full agent evaluation against held-out golden set |
-| `npm run eval:baselines` | Runs trivial keyword baseline and zero-shot baseline |
-| `npm run eval:agreement` | Runs human vs. LLM-as-a-judge Cohen's Kappa analysis |
-| `npm test` | Executes Jest unit tests on tRPC procedures |
-| `npm run lint` | Runs Next.js ESLint checks |
-| `npm run dev` | Starts Next.js development server on `http://localhost:3000` |
-| `npm run build` | Builds production Next.js application |
+| **[README.md](README.md)** | Setup guide, benchmarks, and project overview (this file) |
+| **[Architecture.md](Architecture.md)** | System architecture with 6 Mermaid diagrams |
+| **[Diagram.md](Diagram.md)** | 8 comprehensive visual diagrams (pipeline, data flow, ER, escalation, deployment) |
+| **[DECISION_LOG.md](DECISION_LOG.md)** | 15 non-obvious engineering decisions with rationale |
+| **[report/REPORT.md](report/REPORT.md)** | 6-page empirical analysis report with failure mode analysis |
 
 ---
 

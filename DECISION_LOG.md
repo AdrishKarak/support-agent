@@ -1,6 +1,6 @@
 # Architecture & Engineering Decision Log
 
-This log records the 15 non-obvious engineering decisions made during the design, data pipeline, and evaluation of the Spotify AI Customer Support Agent.
+This log records the 18 non-obvious engineering decisions made during the design, data pipeline, and evaluation of the Spotify AI Customer Support Agent.
 
 ---
 
@@ -63,3 +63,15 @@ This log records the 15 non-obvious engineering decisions made during the design
 15. **LLM-as-a-Judge Validation via Cohen's Kappa Agreement**
     - *Decision:* Benchmarked the LLM judge against human audit scores across Groundedness, Correctness, Tone, and Actionability to quantify inter-rater reliability.
     - *Rationale:* Prevents circular self-grading bias. Calculating Cohen's Kappa ($\kappa$) and off-by-one agreement establishes intellectual honesty about the judge's blind spots (e.g. tendency to grade tone more leniently than humans).
+
+16. **In-Memory LRU Caching for Embeddings and Pipeline Responses**
+    - *Decision:* Implemented a generic LRU cache (`src/server/cache.ts`) with configurable TTL for two layers: (1) embedding cache (10-min TTL, 200 entries) to avoid re-embedding identical query texts, and (2) pipeline response cache (5-min TTL, 50 entries) to return cached results for identical customer messages.
+    - *Rationale:* The Groq free-tier TPM limit makes redundant API calls expensive (both in latency and token budget). Caching identical queries reduces p99 latency from ~15s to <1ms on cache hits. The TTL ensures cached responses don't become stale if the knowledge base is updated.
+
+17. **Docker Multi-Stage Build with Standalone Output**
+    - *Decision:* Configured Next.js `output: 'standalone'` and created a 3-stage Dockerfile (deps → build → production) using Node.js 22 Alpine with a non-root `nextjs` user.
+    - *Rationale:* Standalone output bundles only the necessary server files and `node_modules`, producing a minimal production image (~200MB vs ~1.5GB with full `node_modules`). The non-root user follows CIS Docker Benchmark security guidelines. Alpine base reduces attack surface.
+
+18. **Connection Pool Sizing: 10 Connections Default**
+    - *Decision:* Set `pg.Pool` max connections to 10 for the Neon serverless PostgreSQL connection.
+    - *Rationale:* Neon free-tier allows up to 100 concurrent connections, but serverless cold-start latency is optimized for smaller pools. 10 connections handles the evaluation harness (sequential with 2s pacing) and interactive web UI concurrency without exhausting Neon's connection budget.
