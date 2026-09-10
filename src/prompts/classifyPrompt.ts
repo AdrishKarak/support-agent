@@ -1,6 +1,8 @@
 import { formatTaxonomyForPrompt, INTENT_KEYS } from '../taxonomy/intents';
+import { BrandConfig, DEFAULT_BRAND, getBrandConfig } from '../brands';
 
-export const CLASSIFY_SYSTEM_PROMPT = `You are a high-accuracy Customer Support Intent Classifier for Spotify.
+export function buildClassifySystemPrompt(brand: BrandConfig = getBrandConfig(DEFAULT_BRAND)): string {
+  return `You are a high-accuracy Customer Support Intent Classifier for ${brand.name} (${brand.handle}), a ${brand.domain} support team.
 Your goal is to categorize the customer's incoming message into exactly ONE of the following approved intent categories:
 ${INTENT_KEYS.join(', ')}
 
@@ -21,10 +23,13 @@ Guidelines:
 - If the customer asks about charges, payment issues, student discount, or family plan -> subscription_billing
 - If the customer is locked out, password reset, account hacked, email change -> account_access
 - If the app crashed, froze, or web player failed to render -> app_bug_crash
-- If the customer suggests a new feature or asks for Spotify in an unsupported country -> feature_request
-- If the customer gives praise, compliments, or general venting about redesigns without bug report -> feedback_complaint
+- If the customer suggests a new feature or asks for an unsupported product or service -> feature_request
+- If the customer gives praise, compliments, or general venting without a bug report -> feedback_complaint
 - If the customer demands a phone call, lawyer/legal action, or explicit human agent -> human_escalation_required
 `;
+}
+
+export const CLASSIFY_SYSTEM_PROMPT = buildClassifySystemPrompt();
 
 export function buildClassifyUserPrompt(customerMessage: string): string {
   return `Customer Message:

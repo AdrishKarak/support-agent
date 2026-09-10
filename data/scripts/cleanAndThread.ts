@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'csv-parse';
+import { BRAND_KEYS, BrandKey } from '../../src/brands';
 
 export interface RawTweet {
   tweet_id: string;
@@ -33,8 +34,8 @@ export interface ConversationThread {
 // PII Stripping Function
 export function sanitizeText(raw: string): string {
   let text = raw;
-  // 1. Remove/normalize user handles like @115887, @SpotifyCares, etc.
-  text = text.replace(/@SpotifyCares\b/gi, '__SUPPORT_TAG__');
+  // 1. Remove/normalize support and user handles.
+  text = text.replace(/@(SpotifyCares|AppleSupport|AmazonHelp)\b/gi, '__SUPPORT_TAG__');
   text = text.replace(/@\d+\b/g, '@user');
   text = text.replace(/@[A-Za-z0-9_]+\b/g, '@user');
   text = text.replace(/__SUPPORT_TAG__/g, '@support');
@@ -54,8 +55,10 @@ export function sanitizeText(raw: string): string {
   return text;
 }
 
-async function runThreadReconstruction(targetBrand = 'SpotifyCares') {
-  const csvPath = path.resolve('data/raw/twcs/twcs.csv');
+export async function runThreadReconstruction(targetBrand: BrandKey): Promise<ConversationThread[]> {
+  const csvPath = fs.existsSync(path.resolve('data/raw/twcs.csv'))
+    ? path.resolve('data/raw/twcs.csv')
+    : path.resolve('data/raw/twcs/twcs.csv');
   console.log(`Starting thread reconstruction for brand: ${targetBrand}`);
 
   const tweetsById = new Map<string, RawTweet>();
@@ -205,8 +208,13 @@ async function runThreadReconstruction(targetBrand = 'SpotifyCares') {
   const resolvedThreads = threads.filter(t => t.is_resolved);
   console.log(`Substantive/Resolved threads: ${resolvedThreads.length} (${((resolvedThreads.length / threads.length) * 100).toFixed(1)}%)`);
 
+  return threads;
+}
+
+export function writeProcessedArtifacts(threads: ConversationThread[]) {
   // Ensure processed directory exists
   fs.mkdirSync('data/processed', { recursive: true });
+  const resolvedThreads = threads.filter(t => t.is_resolved);
 
   // Save full cleaned threads
   fs.writeFileSync('data/processed/all_threads.json', JSON.stringify(threads, null, 2));
@@ -247,5 +255,11 @@ async function runThreadReconstruction(targetBrand = 'SpotifyCares') {
 
 // Only execute when run directly
 if (process.argv[1]?.endsWith('cleanAndThread.ts')) {
-  runThreadReconstruction('SpotifyCares').catch(console.error);
+  (async () => {
+    const allThreads: ConversationThread[] = [];
+    for (const brand of BRAND_KEYS) {
+      allThreads.push(...await runThreadReconstruction(brand));
+    }
+    writeProcessedArtifacts(allThreads);
+  })().catch(console.error);
 }

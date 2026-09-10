@@ -8,6 +8,19 @@ import { ConversationThread } from './cleanAndThread';
 
 const { Client } = pg;
 
+export interface KnowledgeBaseEntry {
+  id: string;
+  threadId: string;
+  question: string;
+  answer: string;
+  embedding: number[];
+  brand: string;
+  metadata: {
+    turn_count: number;
+    brand: string;
+  };
+}
+
 function computeHash(content: string): string {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
@@ -87,26 +100,36 @@ export async function embedAndIndexKnowledgeBase(limit = 600) {
     }
 
     if (embeddingValues) {
-      const vectorStr = `[${embeddingValues.join(',')}]`;
-      const metadata = JSON.stringify({
-        turn_count: thread.turn_count,
+      const entry: KnowledgeBaseEntry = {
+        id: thread.thread_id,
+        threadId: thread.thread_id,
+        question: thread.initial_message,
+        answer: thread.resolution_reply,
+        embedding: embeddingValues,
         brand: thread.brand,
-      });
+        metadata: {
+          turn_count: thread.turn_count,
+          brand: thread.brand,
+        },
+      };
+      const vectorStr = `[${entry.embedding.join(',')}]`;
+      const metadata = JSON.stringify(entry.metadata);
 
       // Upsert into DB
       await client.query(
         `
-        INSERT INTO knowledge_base_entries ("id", "threadId", "initialMessage", "resolutionReply", "contentHash", "embedding", "metadata", "createdAt", "updatedAt")
-        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5::vector, $6::jsonb, NOW(), NOW())
+        INSERT INTO knowledge_base_entries ("id", "threadId", "brand", "initialMessage", "resolutionReply", "contentHash", "embedding", "metadata", "createdAt", "updatedAt")
+        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6::vector, $7::jsonb, NOW(), NOW())
         ON CONFLICT ("threadId") DO UPDATE
-        SET "initialMessage" = EXCLUDED."initialMessage",
+        SET "brand" = EXCLUDED."brand",
+            "initialMessage" = EXCLUDED."initialMessage",
             "resolutionReply" = EXCLUDED."resolutionReply",
             "contentHash" = EXCLUDED."contentHash",
             "embedding" = EXCLUDED."embedding",
             "metadata" = EXCLUDED."metadata",
             "updatedAt" = NOW()
         `,
-        [thread.thread_id, thread.initial_message, thread.resolution_reply, hash, vectorStr, metadata]
+        [entry.threadId, entry.brand, entry.question, entry.answer, hash, vectorStr, metadata]
       );
 
       indexedCount++;

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { publicProcedure } from '../trpc';
 import { embedQuery } from '@/server/llm/gemini';
 import pg from 'pg';
+import { BRAND_KEYS, BrandKey, DEFAULT_BRAND } from '@/brands';
 
 const { Pool } = pg;
 
@@ -23,6 +24,7 @@ function getDbPool(): pg.Pool {
 export const RetrieveInputSchema = z.object({
   query: z.string().min(1),
   topK: z.number().optional().default(3),
+  brand: z.enum(BRAND_KEYS).default(DEFAULT_BRAND),
 });
 
 export const RetrievedThreadSchema = z.object({
@@ -42,7 +44,8 @@ export type RetrieveResult = z.infer<typeof RetrieveOutputSchema>;
 
 export async function retrieveSimilarThreadsCore(
   query: string,
-  topK = 3
+  topK = 3,
+  brand: BrandKey = DEFAULT_BRAND
 ): Promise<RetrieveResult> {
   const pool = getDbPool();
 
@@ -59,11 +62,12 @@ export async function retrieveSimilarThreadsCore(
       1 - (embedding <=> $1::vector) as similarity
     FROM knowledge_base_entries
     WHERE embedding IS NOT NULL
+      AND (brand = $3 OR metadata->>'brand' = $3)
     ORDER BY embedding <=> $1::vector ASC
     LIMIT $2;
   `;
 
-  const res = await pool.query(queryText, [vectorStr, topK]);
+  const res = await pool.query(queryText, [vectorStr, topK, brand]);
 
   const threads: RetrievedThread[] = res.rows.map(row => ({
     threadId: row.threadId,
@@ -84,5 +88,5 @@ export const retrieveRouter = publicProcedure
   .input(RetrieveInputSchema)
   .output(RetrieveOutputSchema)
   .mutation(async ({ input }) => {
-    return await retrieveSimilarThreadsCore(input.query, input.topK);
+    return await retrieveSimilarThreadsCore(input.query, input.topK, input.brand);
   });

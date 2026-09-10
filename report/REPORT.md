@@ -1,226 +1,86 @@
-# Spotify AI Customer Support Agent: System Architecture, Evaluation & Empirical Analysis
+# Multi-Brand AI Customer Support Platform: Assignment Report
 
-**Author:** Adrish Karak  
-**Domain:** Spotify Customer Support (`@SpotifyCares`)  
-**Dataset:** Twitter Customer Support Corpus (`thoughtvector/customer-support-on-twitter`)  
-**Stack:** Next.js 15, TypeScript, tRPC, Prisma, Neon Serverless PostgreSQL (`pgvector`), Gemini, Groq  
-**Evaluation Date:** September 2026  
+## 1. Problem Framing
 
----
+The system drafts public support replies for short, ambiguous customer messages. “Good” means: the selected brand’s support identity is respected; the reply is grounded in a verified same-brand historical resolution; sensitive account, legal, and security cases are escalated; and the response gives a concise next action without exposing PII.
 
-## Executive Summary
+The runtime supports `SpotifyCares`, `AppleSupport`, and `AmazonHelp`. Spotify remains the default because the current evaluation artifact and taxonomy are Spotify-derived. The Apple and Amazon paths are architectural support and require brand-specific data coverage before their quality can be claimed.
 
-This report documents the design, implementation, and rigorous empirical evaluation of an autonomous, retrieval-grounded AI Customer Support Agent tailored specifically for Spotify's Twitter support operations (`@SpotifyCares`). Customer support on social media operates under severe constraints: messages are short (under 280 characters), emotionally volatile, frequently ambiguous, and demand rapid resolution without leaking user private credentials into public timelines.
+### What is intentionally not built
 
-The production-grade pipeline built here features:
-1. An **empirically derived 9-intent taxonomy** clustered directly from real customer inquiries via dense embeddings ($k=12$ K-Means).
-2. A **retrieval-augmented resolution engine** powered by Neon PostgreSQL and native `pgvector`, indexing historical multi-turn troubleshooting resolutions with 768-dimensional embeddings (`gemini-embedding-2`) and HNSW cosine distance search.
-3. An **adversarial triage and escalation engine** combining deterministic safety heuristics (legal threats, account hijacking, explicit human representative demands) with dynamic confidence/sparsity thresholds and LLM-assisted policy verification.
-4. A **164-example hand-labeled golden evaluation benchmark**, benchmarked against two standalone baseline systems (a keyword/rule-based canned replier and a zero-shot ungrounded LLM).
-5. A **human-vs-judge calibration study** analyzing 15 hand-audited reply pairs to quantify LLM-as-a-judge severity biases using Cohen's Kappa ($\kappa$) and off-by-one tolerance metrics.
+- No billing refunds, password resets, account mutations, or other write actions.
+- No ingestion or storage of private direct messages.
+- No voice or audio support.
+- No claim that a Spotify-derived taxonomy is optimal for Apple or Amazon.
+- Evaluation labels and quality scores are kept with their sampling and scoring workflows for inspection and reproduction.
 
----
+## 2. System Design
 
-## 1. Problem Framing & Scope Cuts
+`cleanAndThread.ts` reconstructs conversations and assigns a brand key. `embedKnowledgeBase.ts` stores the key in both `brand` and `metadata.brand`. Runtime retrieval filters by that key before cosine ordering. The pipeline then passes brand name, handle, and domain into classification, grounded drafting, and escalation prompts. The UI sends the selected brand to `POST /api/pipeline` and changes its scenario text and result labels accordingly.
 
-### 1.1 What "Good" Means for @SpotifyCares
-In customer support for a global digital streaming platform, a "good" interaction differs fundamentally from general e-commerce:
-* **High-Fidelity Technical Diagnostics:** Music streaming issues are dominated by client-side platform discrepancies (iOS vs. Android vs. macOS desktop vs. Web Player, cache corruption, offline sync errors, and third-party hardware integration like Sonos, Google Home, or CarPlay). A generic canned response like *"Please check our help page"* causes extreme customer friction.
-* **Public vs. Private DM Boundary:** Customer privacy is paramount. Support agents must triage inquiries publicly on Twitter but know precisely *when* and *how* to transition to private Direct Messages (DMs) to inspect subscription billing or back-end user records without asking for private data in the open.
-* **Brand Tone & Empathy:** Spotify’s distinctive customer care voice is energetic, empathetic, informal yet technically authoritative, frequently incorporating agent sign-offs (e.g. `/DV`, `/JI`) and emojis while immediately acknowledging user frustration.
+## 3. Current Measured Artifacts
 
-### 1.2 Deliberate Scope Cuts (What We Explicitly Chose NOT to Build)
-To ensure production quality, sub-second latency, and zero hallucination, the following capabilities were explicitly cut from scope:
-1. **Direct Account Mutation / Write Actions:** The agent does not execute billing refunds, cancel subscriptions, or reset user passwords via API. In social customer support, public bots should *never* hold write credentials to core databases.
-2. **Automated DM Ingestion:** The agent processes public incoming inquiries and directs customers to DMs with exact diagnostic instructions. It does not ingest or store raw private Twitter DMs.
-3. **Multi-Brand Support:** Rather than building a shallow cross-brand bot, we specialized 100% of the taxonomy, embeddings, and prompt engineering on Spotify. Multi-brand generalists fail on nuanced technical vocabulary (e.g. "Release Radar", "Local Files greyed out", "Family Mix", "Sonos Play:1").
-4. **Autonomous Voice/Audio Support:** Restricted strictly to text-based micro-interactions.
+The repository currently contains these reproducible artifacts:
 
----
+| Artifact | Current value | Provenance |
+|---|---:|---|
+| Golden records | 132 | `data/processed/golden_eval_set.jsonl` |
+| Full-agent evaluation slice | 10 | `data/processed/eval_results.json` |
+| Baseline comparison slice | 40 | `data/processed/baseline_results.json` |
+| Judge calibration sample | 15 | `data/processed/judge_agreement_results.json` |
+| Supported runtime brands | 3 | `src/brands.ts` |
 
-## 2. Architecture & Pipeline
+The measured 40-record baseline artifact reports the trivial keyword baseline at 87.5% intent accuracy, 0.4534 macro F1, and 1.93/5 judge score; the no-RAG baseline reports 47.5% accuracy, 0.1912 macro F1, and 2.50/5. The stored 10-record full-agent artifact reports 60.0% accuracy, 0.5000 macro F1, 100% retrieval hit rate at the configured threshold, and 4.70/5 judge score.
 
-The system is built as an end-to-end typed tRPC service running on Next.js 15 and Node.js.
+These slices are not directly comparable in sample size, and the judge scores are not a substitute for human quality labels. They are engineering smoke-test evidence, not a final statistically powered benchmark.
 
+## 4. Baselines
+
+1. **Trivial baseline:** keyword intent routing with canned replies and fixed confidence.
+2. **Simple no-RAG baseline:** LLM classification plus ungrounded LLM reply generation, with no retrieved support context.
+
+The RAG pipeline’s intended advantage is groundedness and brand correctness, especially on settings, account, billing, and escalation cases. A keyword baseline can win raw accuracy on a class-imbalanced slice while producing poor replies, so macro F1 and reply-quality review are required.
+
+## 5. Failure Analysis
+
+The stored evaluation traces show five recurring risks:
+
+1. **Coarse or noisy labels:** missing-content and feature-request messages can be labelled as playback issues, so a semantically sensible prediction is counted as wrong.
+2. **Multi-intent messages:** a synchronization or account message may contain both a technical symptom and a request for a product capability.
+3. **Language and device variation:** non-English text and third-party hardware vocabulary can shift intent classification toward a nearby category.
+4. **Provider rate limits:** Groq retries and Gemini fallback preserve availability but create large latency spikes.
+5. **Retrieval coverage gaps:** historical resolutions do not cover future app versions, new policies, or new brands unless their KB is separately ingested.
+
+Each hypothesis is testable: improve label adjudication, add multi-label or conversation context, add multilingual/device examples, provision model capacity, and measure per-brand/per-time-slice retrieval recall.
+
+## 6. What Is Misleading About My Headline Number?
+
+- **87.5% trivial accuracy** is from a 40-record slice dominated by two intents; its macro F1 is only 0.4534 and its judge score is 1.93/5.
+- **60.0% full-agent accuracy** is from a 10-record stored run, too small for a strong generalization claim.
+- **100% retrieval hit rate** reflects a curated historical KB and a low threshold; it does not prove coverage of novel issues.
+- **4.70/5 judge score** comes from an LLM judge and can be lenient, especially when a reply is polite or mirrors the reference.
+- **Agreement statistics need context:** Cohen’s kappa is reported with exact and within-one agreement, sample size, and the scoring workflow so readers can interpret the calibration result rather than relying on one number.
+- **Multi-brand support is implemented as an architecture and data contract, not demonstrated quality parity:** the current golden set is Spotify-only.
+
+## 7. One More Week
+
+1. Expand the evaluation set to 150–250 examples with adjudication notes, brand metadata, and a fixed train/eval split.
+2. Add blind audits of generated replies and retain the rubric-level score traces.
+3. Rebuild the taxonomy per brand or add a shared taxonomy with brand-specific intents.
+4. Add hybrid BM25 plus dense retrieval for exact error codes and policy terms.
+5. Add a human approval dashboard and track edit rate, escalation precision, and per-brand drift.
+
+## 8. Reproduction
+
+```bash
+npm install
+cp .env.example .env
+npm run setup
+npx tsc --noEmit
+npx jest --runInBand
+npm run eval:baselines
+npm run eval:agreement
+npm run eval
 ```
-Incoming Customer Tweet
-           │
-           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Agent Pipeline Orchestrator               │
-│                                                             │
-│   ┌───────────────────────────┐ ┌─────────────────────────┐ │
-│   │ Concurrent Step 1A:       │ │ Concurrent Step 1B:     │ │
-│   │ Structured Classification │ │ Dense Vector Retrieval  │ │
-│   │ (Groq openai/gpt-oss-20b) │ │ (Neon pgvector HNSW)    │ │
-│   └─────────────┬─────────────┘ └────────────┬────────────┘ │
-│                 │                            │              │
-│                 ▼                            ▼              │
-│   ┌───────────────────────────────────────────────────────┐ │
-│   │ Step 2: Grounded Reply Synthesis                      │ │
-│   │ (Retrieved top-3 past resolutions context)            │ │
-│   └───────────────────────────┬───────────────────────────┘ │
-│                               │                             │
-│                               ▼                             │
-│   ┌───────────────────────────────────────────────────────┐ │
-│   │ Step 3: Escalation Decision Guardrails                │ │
-│   │ - Fast Regex Heuristics (Legal, Fraud, Human Demand)  │ │
-│   │ - Confidence Threshold (Intent Confidence < 0.65)     │ │
-│   │ - Knowledge Sparsity Threshold (Similarity < 0.50)    │ │
-│   │ - LLM Policy Judgment (Nuance / Repeated Complaints)  │ │
-│   └───────────────────────────────────────────────────────┘ │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-     Typed JSON Response: { intent, reply, escalate, escalationReason, priority }
-```
 
-### 2.1 Database & Retrieval Engineering
-* **Neon Serverless Postgres:** Hosted cloud Postgres with native `vector` extension (`v0.8.6`).
-* **Connection Pooling Split:** Application queries use the connection pooler (`DATABASE_URL`), while DDL migrations use the unpooled direct endpoint (`DIRECT_URL`).
-* **HNSW Vector Indexing:** 768-dimensional dense vectors indexed with `vector_cosine_ops` (`m = 16`, `ef_construction = 64`) for sub-15ms nearest-neighbor retrieval.
-* **Idempotent Ingestion:** Each knowledge base thread is assigned a SHA-256 hash over its contents (`initial_message + "\n---\n" + resolution_reply`), enabling zero-redundancy upserts.
-
----
-
-## 3. Empirical Intent Taxonomy
-
-Rather than imposing an arbitrary academic taxonomy, we derived 9 empirical categories by embedding 250 real customer tweets via `gemini-embedding-2` and clustering them via K-Means ($k=12$), followed by merging overlapping semantic clusters:
-
-| Intent Key | Plain-Language Definition | Distribution in Eval Set |
-|---|---|---|
-| `playback_issue` | Track won't play, stuttering, skipping, device output/volume, audio stops | 38.4% |
-| `offline_download` | Downloaded songs unplayable offline, sync errors, storage issues | 15.2% |
-| `account_access` | Login failure, password reset, compromised account, email changes | 9.8% |
-| `subscription_billing` | Charged twice, student discount expired, premium status not activating | 8.5% |
-| `content_availability` | Song/album missing from catalog, greyed-out tracks, license expiry | 7.9% |
-| `app_bug_crash` | App closes unexpectedly, freeze on launch, UI glitch after update | 7.3% |
-| `feature_request` | Suggestions for UI, playlist management, shuffle algorithm improvements | 6.1% |
-| `feedback_complaint` | Frustration about recent updates, advertising volume, UI redesigns | 4.3% |
-| `human_escalation_required` | Explicit demands for human agent, legal threats, persistent unresolvable bugs | 2.5% |
-
-All definitions and canonical few-shot examples reside in a single source of truth: [`src/taxonomy/intents.ts`](file:///home/adrish/Desktop/support-agent/src/taxonomy/intents.ts).
-
----
-
-## 4. Benchmark Results & Comparative Evaluation
-
-We benchmarked three standalone systems on the held-out golden evaluation set:
-1. **Trivial Baseline:** Deterministic keyword regex matching with static canned replies (e.g. *"Please restart your device or visit our support portal"*).
-2. **Zero-Shot Baseline:** LLM classifier and ungrounded response generator with **no knowledge base retrieval** (pure parametric model knowledge).
-3. **Full Production Pipeline:** Concurrent classification, dense pgvector retrieval, grounded draft synthesis, and multi-layer escalation guardrails.
-
-### 4.1 Comparative Benchmark Matrix
-
-| Metric | Trivial Baseline | Zero-Shot Baseline | Full Agent Pipeline | Delta vs. Best Baseline |
-|---|---|---|---|---|
-| **Intent Accuracy** | **87.5%** *(artifact)* | 47.5% | **60.0%** | **+12.5%** |
-| **Intent Macro F1** | 0.4534 | 0.1912 | **0.5000** | **+0.0466** |
-| **Intent Macro Precision** | 0.5000 | 0.2857 | **0.4815** | -0.0185 |
-| **Intent Macro Recall** | 0.4190 | 0.1468 | **0.6111** | **+0.1921** |
-| **Escalation Accuracy** | 92.5% | 0.0% | **80.0%** | -12.5% |
-| **Retrieval Hit-Rate ($\ge 0.55$)** | N/A | 0.0% | **100.0%** | **+100.0%** |
-| **LLM-Judge Groundedness (1-5)** | 1.00 | 2.10 | **4.20** | **+2.10 pts (+100%)** |
-| **LLM-Judge Correctness (1-5)** | 2.10 | 2.80 | **4.60** | **+1.80 pts (+64%)** |
-| **LLM-Judge Tone & Empathy (1-5)**| 3.20 | 3.40 | **5.00** | **+1.60 pts (+47%)** |
-| **LLM-Judge Actionability (1-5)** | 1.40 | 2.30 | **5.00** | **+2.70 pts (+117%)** |
-| **Overall Judge Score (1-5)** | **1.93** | **2.50** | **4.70** | **+2.20 pts (+88%)** |
-| **Average End-to-End Latency** | **<10 ms** | 1,850 ms | 12,000–23,764 ms | +11,000 ms |
-
----
-
-## 5. Human-vs-Judge Agreement Analysis
-
-To prevent self-congratulatory LLM grading, we conducted a blind human calibration audit on 15 golden resolution pairs. Both the human evaluator and the LLM judge evaluated identical (Customer Message, Retrieved Context, Draft Reply, Reference Reply) tuples across 4 distinct dimensions:
-
-### 5.1 Agreement Metrics Table
-
-| Evaluation Dimension | Exact Agreement (%) | Off-by-One Agreement ($\pm 1$ pt) | Cohen's Kappa ($\kappa$) | Primary Disagreement Driver |
-|---|---|---|---|---|
-| **Groundedness** | 6.7% | **100.0%** | $0.0000$ | Human scores 4/5; Judge scores 5/5 |
-| **Technical Correctness** | 33.3% | **100.0%** | $0.0000$ | Human scores 4/5; Judge scores 5/5 |
-| **Tone & Empathy** | **86.7%** | **93.3%** | **$0.3023$** | High agreement on Spotify brand voice |
-| **Actionability** | 13.3% | **100.0%** | $-0.0894$ | Human scores 4/5; Judge scores 5/5 |
-
-### 5.2 Critical Qualitative Finding: The "DM Protocol Severity Skew"
-The raw Cohen's Kappa score of $\approx 0.0$ for Groundedness and Actionability initially looks alarming, but inspecting the individual audit pairs reveals a specific, consistent phenomenon:
-* **The Human Rationale:** When a customer reports an issue and the bot replies: *"Hey Geoff, help's here! Can you DM us your account email and username? We'll take a look backstage /LJ [LINK]"*, the human auditor deducted 1 point (giving 4/5) because the customer was not given an immediate self-serve troubleshooting command on Twitter.
-* **The LLM Judge Rationale:** The LLM Judge awarded 5/5 because requesting account details in private DMs is the *exact, verified standard operating procedure* documented in Spotify's official resolution knowledge base.
-* **Conclusion:** 100% of scores fall within $\pm 1$ point. The zero Cohen's Kappa is a mathematical artifact of **zero score variance** in the judge's outputs (the judge consistently gave 5s to verified knowledge-base procedures, collapsing the marginal distribution required for Kappa).
-
----
-
-## 6. Top 5 Failure Modes & Qualitative Analysis
-
-By inspecting error traces in `data/processed/eval_results.json`, we isolated the top 5 operational failure modes:
-
-### Failure Mode 1: Fine-Grained Label Ambiguity vs. Coarse Ground Truth
-* **Golden Example (Thread #1005200):**
-  * *Customer:* `"Disappointed there was no #Seal on @user #TBT animal playlist"`
-  * *Ground Truth Label:* `playback_issue` (coarse label assigned during clustering)
-  * *Agent Prediction:* `content_availability` (Confidence: 0.86)
-  * *Agent Reply:* `"Hey @user, we totally get how it feels when a track you love isn't in a playlist. Availability depends on licensing agreements... /GK [LINK]"`
-* **Root Cause:** The agent's prediction is actually *more semantically accurate* than the coarse golden label. In customer support datasets, missing tracks are often lumped into playback bugs. The agent correctly reasoned that a missing artist is a catalog licensing matter.
-
-### Failure Mode 2: Multi-Intent Feature Suggestions Conflated with Playback
-* **Golden Example (Thread #1010849):**
-  * *Customer:* `"Hey @user @user - is there any way to hide certain playlists that I'll never listen to from showing up?"`
-  * *Ground Truth Label:* `playback_issue`
-  * *Agent Prediction:* `feature_request` (Confidence: 0.91)
-  * *Agent Reply:* `"Hey @user, currently Spotify doesn't have a built-in option to hide specific playlists from your library or feed. You can remove a playlist by tapping the three dots... We'd love to pass that feedback along to our product team!"`
-* **Root Cause:** The customer is asking for a capability that does not exist in the client. The LLM correctly identified this as a feature inquiry rather than a broken player.
-
-### Failure Mode 3: Foreign Language Inquiries on English Channel
-* **Golden Example (Thread #100149):**
-  * *Customer:* `"@user des soucis avec la connection @user ? Impossible de me reconnecter à ma Play:1 Cc @user @user"` (French)
-  * *Ground Truth Label:* `playback_issue`
-  * *Agent Prediction:* `account_access`
-  * *Agent Reply:* `"Bonjour @user, désolé pour le désagrément. Pour vérifier votre compte, merci de nous envoyer un message privé... En attendant, vous pouvez consulter notre FAQ sur les problèmes de connexion ici: [LINK]"`
-* **Root Cause:** Cross-lingual semantic shift. The French word *"reconnecter"* triggered the `account_access` token weights rather than the hardware streaming integration (`playback_issue`). Crucially, the generator still responded in fluent French with the correct support link.
-
-### Failure Mode 4: Rate-Limit Induced Latency Spikes
-* **Occurrence:** Under high volume, Groq's free-tier 8,000 TPM limit triggers HTTP 429 errors.
-* **Mitigation & Trade-off:** The agent backs off for 2.5s and retries before falling back to Gemini (`gemini-3.6-flash`). While this guarantees 100% request success without downtime, latency increases from ~1,200ms to 15,000–27,000ms. In production, dedicated provisioned throughput (e.g. Groq Tier 1) would eliminate these stalls entirely.
-
-### Failure Mode 5: Zero-Shot Hallucination in the Absence of Retrieval
-* **Zero-Shot Baseline Example:** In the zero-shot baseline (without pgvector), the agent frequently invented fake Spotify settings menu paths (e.g., *"Go to Settings > Music Quality > Reset Audio Engine"*) that do not exist in the iOS app.
-* **RAG Resolution:** In the full pipeline, retrieval grounding constrained the LLM to verified historical resolutions, completely eliminating fictional UI instructions (Judge Groundedness jumped from 2.10 to 4.60).
-
----
-
-## 7. Mandatory Honest Section: "What is Misleading About My Headline Number?"
-
-In AI evaluation, aggregate metrics can easily create an illusion of perfection. Here is an honest examination of our numbers:
-
-1. **The Trivial Baseline's 87.5% Accuracy is an Illusion of Class Imbalance:**
-   * In our initial baseline run, the trivial regex baseline scored **87.5% accuracy**, while the advanced LLM scored **46.7%**. A naive executive would conclude regex is superior.
-   * *The Reality:* The evaluation slice had a disproportionate representation of playback keywords. The trivial baseline had a canned rule that defaulted to `playback_issue` on any message mentioning "music" or "app". It achieved high accuracy by being a majority-class guesser. However, its reply quality score was **1.93 / 5.0**—it gave useless canned restart advice to users asking about billing or legal disputes.
-2. **The 100% Retrieval Hit-Rate Reflects Clean KB Curation, Not Universal Domain Coverage:**
-   * Our retrieval hit-rate was 100% ($\ge 0.55$ cosine similarity).
-   * *The Reality:* The 300 knowledge base articles were drawn from the same historical era of Twitter support as the eval candidates. In a real-world deployment, novel bugs introduced by new Spotify app versions (e.g., a broken iOS 18 lock-screen widget) would yield a much lower similarity score, requiring human escalation.
-3. **The 100% Escalation Accuracy Reflects Strict Triage Rules on Handled Samples:**
-   * The 15 tested items in the final eval run were all safely resolvable via standard KB procedures, and the system correctly identified them as non-escalated (TN=15, Accuracy=100%).
-   * *The Reality:* On ambiguous edge cases (e.g., borderline user harassment without explicit keywords), the escalation decision relies on LLM policy judgment, which exhibits slight variance across temperatures.
-4. **Overall Judge Score (4.7 / 5.0) Suffers from LLM Leniency:**
-   * Models evaluate other models generously. While human auditors scored the same replies at 4.2 / 5.0, the LLM judge rarely gave below 5 for tone and correctness if the reply sounded polite and contained a link.
-5. **How Sequential Prefix Slicing & Substring Matching Depressed Initial Accuracy:**
-   * In initial unstratified runs, the golden evaluation set was populated bucket-by-bucket (`playback_issue` first). Slicing the first 15 items evaluated the model solely on a single category, where naive regex substring matches (`"playlist"` containing `"play"`) had mislabeled feature requests as playback issues.
-   * When the LLM correctly predicted `feature_request` or `content_availability`, it was unfairly penalized by the corrupted ground-truth labels (yielding an apparent 46.7% accuracy).
-   * Once we implemented round-robin stratification across all 9 classes and word-boundary parsing, true multi-class accuracy was revealed at **60.0%** (Macro Recall **0.6111**), outperforming the zero-shot baseline across the full intent taxonomy.
-
----
-
-## 8. What I Would Do Next with One More Week
-
-If given one additional week of engineering time, I would implement:
-1. **Multi-Turn Thread Context Ingestion:** Extend the tRPC router to accept full conversation histories (`messageHistory: Message[]`), enabling the agent to maintain context across 3-4 customer replies rather than triaging in isolation.
-2. **Dynamic Hybrid Search (Dense + BM25 with Reciprocal Rank Fusion):** Dense embeddings occasionally miss exact error codes (e.g. `Error Code: 403-Auth`). Adding BM25 full-text indexing alongside pgvector would provide keyword precision for hardware error codes.
-3. **Human-in-the-Loop Review Dashboard:** Build a Next.js 15 UI with Server Actions and optimistic updates where human agents can review draft replies, approve with one click, or edit inline.
-4. **Streaming tRPC Responses:** Implement tRPC subscriptions or Server-Sent Events (SSE) to stream Groq tokens directly to the client UI, reducing perceived latency from 1.5s to <200ms.
-5. **Automated Intent Confidence Calibration:** Train a lightweight logistic regression calibration layer over LLM logprobs and cosine distance to provide calibrated probabilities rather than raw model confidence scores.
-
----
-
-## 9. Conclusion
-
-The Spotify AI Customer Support Agent proves that retrieval-augmented generation is not merely a tool for question-answering, but an essential architectural requirement for customer support safety. By replacing ungrounded zero-shot generation with dense pgvector retrieval over historically verified resolutions, reply quality improved by **+96% (from 2.50 to 4.90/5.0)** while completely eliminating hallucinated software features. Combining deterministic safety heuristics with structured LLM classification provides a reliable, transparent, and reproducible foundation for enterprise support automation.
+The database-backed commands require `DATABASE_URL`, `DIRECT_URL`, `GEMINI_API_KEY`, and `GROQ_API_KEY`. The under-15-minute reviewer path uses the checked-in processed artifacts; raw CSV reconstruction and full embedding ingestion are intentionally separate because they are larger and API-quota dependent.

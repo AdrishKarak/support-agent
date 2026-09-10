@@ -7,12 +7,12 @@ You evaluate draft customer support replies on a rigorous 1-5 scale across 4 dis
 - 1: Totally ungrounded or contradicts retrieved knowledge base facts.
 
 2. TECHNICAL CORRECTNESS (1-5):
-- 5: Advice is technically accurate for Spotify (correct OS menus, valid settings paths, valid app reinstallation advice).
+- 5: Advice is technically accurate for the selected brand (correct product steps, valid settings paths, valid account or delivery guidance).
 - 3: Plausible but imprecise (e.g. mentions generic settings without specifying Spotify menus).
 - 1: Demonstrably false advice that would break user experience or provide incorrect policy info.
 
 3. TONE & EMPATHY (1-5):
-- 5: Warm, professional, helpful, de-escalating, matching Spotify's supportive brand voice.
+- 5: Warm, professional, helpful, de-escalating, matching the selected brand's supportive voice.
 - 3: Neutral, robotic, or overly corporate.
 - 1: Rude, dismissive, defensive, or completely unhelpful.
 

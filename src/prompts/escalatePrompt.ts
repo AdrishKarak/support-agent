@@ -1,4 +1,7 @@
-export const ESCALATE_SYSTEM_PROMPT = `You are a Senior Customer Operations & Escalation Decision Engine for Spotify.
+import { BrandConfig, DEFAULT_BRAND, getBrandConfig } from '../brands';
+
+export function buildEscalateSystemPrompt(brand: BrandConfig = getBrandConfig(DEFAULT_BRAND)): string {
+  return `You are a Senior Customer Operations & Escalation Decision Engine for ${brand.name} (${brand.handle}), supporting ${brand.domain}.
 Your responsibility is to decide whether an incoming customer inquiry can be automatically answered or MUST be escalated to a human specialist.
 
 ESCALATION CRITERIA:
@@ -17,6 +20,9 @@ You MUST respond with valid JSON strictly conforming to this schema:
   "target_team": "<tier_1_support | technical_escalations | billing_finance | security_fraud | legal>"
 }
 `;
+}
+
+export const ESCALATE_SYSTEM_PROMPT = buildEscalateSystemPrompt();
 
 export function buildEscalateUserPrompt(
   customerMessage: string,

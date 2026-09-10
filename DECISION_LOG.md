@@ -1,77 +1,63 @@
 # Architecture & Engineering Decision Log
 
-This log records the 18 non-obvious engineering decisions made during the design, data pipeline, and evaluation of the Spotify AI Customer Support Agent.
+This is the plain-language record of the non-obvious decisions behind the multi-brand support platform. It intentionally includes evaluation caveats so the headline numbers are not read as stronger evidence than they are.
 
----
+1. **Use one canonical brand key**
+   - **Decision:** Represent brands as `SpotifyCares`, `AppleSupport`, and `AmazonHelp`, with name, handle, domain, icon, and accent stored in `src/brands.ts`.
+   - **Why:** The same key must survive ETL, metadata, SQL filters, prompts, API validation, cache keys, and UI state without repeated string mappings.
 
-1. **Brand Selection: Why SpotifyCares over AmazonHelp or AppleSupport**
-   - *Decision:* Selected `SpotifyCares` (43,265 tweets) as the target single-brand domain instead of higher-volume brands like `AmazonHelp` (169k) or `AppleSupport` (106k).
-   - *Rationale:* Profiling the raw dataset revealed AmazonHelp had high non-English multi-language mixture (Japanese, German) and heavy deflection to chat/phone links. AppleSupport had an immediate Direct Message deflection rate of 47%. In contrast, SpotifyCares exhibited a **71.1% public substantive troubleshooting rate**, pure English corpus, and modular technical solutions (cache clearing, offline mode, clean reinstallations).
+2. **Keep brand in both a database column and JSON metadata**
+   - **Decision:** `KnowledgeBaseEntry.brand` is stored as a column and repeated in `metadata.brand`.
+   - **Why:** The column makes filtering explicit and indexable; JSON metadata keeps exported records self-describing and compatible with older retrieval paths.
 
-2. **Thread Reconstruction: Graph Traversal of Flat Tweets**
-   - *Decision:* Built a two-pass memory indexing and tree-linking algorithm using `tweet_id` and `in_response_to_tweet_id` rather than treating tweets as independent turns.
-   - *Rationale:* Twitter support interactions are multi-turn conversations where initial customer queries often omit critical diagnostic info (device/OS version). Reconstructing full parent-child trees allowed us to extract the true resolution reply provided at the end of the thread.
+3. **Filter before vector ordering**
+   - **Decision:** Retrieval applies the selected brand predicate in the same SQL query that orders by pgvector cosine distance.
+   - **Why:** A cross-brand nearest neighbor can be semantically close but operationally wrong. Brand isolation is part of correctness, not a post-processing preference.
 
-3. **PII Sanitization Strategy**
-   - *Decision:* Systematically masked all numeric user IDs (`@\d+`) to `@user`, preserved brand handles as `@support`, masked emails (`[EMAIL]`), phone numbers (`[PHONE]`), and normalized shortened tracking links (`[LINK]`).
-   - *Rationale:* Prevents user PII leakage into vector embeddings and ensures the classifier/retrieval engine focuses purely on semantic intent without being biased by repetitive usernames or volatile URL tokens.
+4. **Process the raw export once per supported brand, then merge artifacts**
+   - **Decision:** Thread reconstruction scans the existing TWCS export for each supported author and writes one combined processed dataset.
+   - **Why:** It preserves the current graph reconstruction algorithm while making each thread’s ownership unambiguous and keeping the embedding script’s input format stable.
 
-4. **Definition of "Resolved" Conversations for the Knowledge Base**
-   - *Decision:* A thread was classified as a knowledge base candidate only if: (a) it contained $\ge 2$ turns, (b) the brand reply provided substantive troubleshooting instructions (e.g. restart, cache, settings, reinstall), or (c) the customer explicitly thanked/confirmed resolution. Immediate one-line DM deflections without technical context were excluded from the KB.
-   - *Rationale:* Retrieval-grounded generation is only as good as the ground-truth solutions stored. Polluting the knowledge base with "Please DM us your email" leads to generic, unhelpful agent replies.
+5. **Sanitize support handles as well as user handles**
+   - **Decision:** `@SpotifyCares`, `@AppleSupport`, and `@AmazonHelp` normalize to `@support`; numeric and ordinary user handles normalize separately.
+   - **Why:** Embeddings should represent the issue, not a repeated account name, while the runtime prompt still receives the real selected handle.
 
-5. **Empirical Intent Clustering vs. Off-the-Shelf Taxonomies**
-   - *Decision:* Sampled 250 real customer inquiries, embedded them with `gemini-embedding-2`, ran K-Means ($k=12$), and iteratively merged near-duplicates to establish a 9-category taxonomy.
-   - *Rationale:* General e-commerce taxonomies (e.g. "Shipping Status", "Return Request") fail completely for a digital streaming service. Deriving categories directly from cluster centroids surfaced specific music domain issues like `offline_download`, `playback_issue`, and `content_availability`.
+6. **Default to Spotify for backward compatibility**
+   - **Decision:** Missing brand inputs resolve to `SpotifyCares`.
+   - **Why:** Existing API clients, scripts, and direct function calls continue to work while new clients can opt into another brand explicitly.
 
-6. **Single Source-of-Truth for Taxonomy (`src/taxonomy/intents.ts`)**
-   - *Decision:* Defined the 9 intents, their strict definitions, classification guidelines, and few-shot examples in a single TypeScript file imported by the classifier prompt, labeling tools, and evaluation harness.
-   - *Rationale:* Prevents prompt drift and labeling skew. When the classifier prompt and evaluation ground-truth share the exact same definitions, classification evaluation remains consistent.
+7. **Validate brand at every public contract boundary**
+   - **Decision:** Zod schemas and the REST route accept only the three canonical keys.
+   - **Why:** Silent fallback is useful inside the pipeline, but an API typo should be visible to callers rather than generating a reply from the wrong knowledge base.
 
-7. **Database Architecture: Neon PostgreSQL + Native pgvector (No Docker)**
-   - *Decision:* Deployed directly to Neon serverless Postgres with native `vector` extension (`v0.8.6`), utilizing an HNSW index on `embedding vector_cosine_ops`.
-   - *Rationale:* Neon eliminates local Docker overhead, supports pgvector natively in the cloud, and allows instantaneous reproduction for external evaluators by providing a standard connection string.
+8. **Carry brand context into every LLM stage**
+   - **Decision:** Classification, drafting, and escalation prompts receive brand name, handle, and domain.
+   - **Why:** Retrieval grounding alone does not prevent a generic or wrong-handle reply; the support identity must be explicit in system instructions.
 
-8. **Connection Splitting: Pooled `DATABASE_URL` vs. Direct `DIRECT_URL`**
-   - *Decision:* Configured Prisma with pooled connection (`DATABASE_URL`) for runtime queries and direct connection (`DIRECT_URL`) for schema pushes (`prisma db push`).
-   - *Rationale:* Neon's PgBouncer pooler cannot execute transactional DDL migrations or prepared statements required during schema migrations. Separating the direct host prevents the most common Neon+Prisma migration failure.
+9. **Keep classification and retrieval concurrent**
+   - **Decision:** The orchestrator runs intent classification and embedding retrieval in `Promise.all`.
+   - **Why:** Neither stage requires the other’s output, so parallel execution reduces user-visible latency without weakening the sequential draft and escalation decisions.
 
-9. **Embedding Dimensionality: 768-Dim Dense Vectors**
-   - *Decision:* Utilized `gemini-embedding-2` with `outputDimensionality: 768` instead of default 3072.
-   - *Rationale:* 768 dimensions preserves high semantic fidelity while reducing Neon pgvector memory footprint by 75% and enabling significantly faster HNSW cosine distance (`<=>`) queries within Postgres.
+10. **Escalate deterministic safety signals before asking an LLM**
+    - **Decision:** Legal, security, and explicit human-demand signals are handled before the nuanced escalation prompt.
+    - **Why:** High-risk decisions should not depend on model temperature, provider availability, or a prompt interpretation.
 
-10. **Idempotent Knowledge Base Ingestion via SHA-256 Content Hashing**
-    - *Decision:* Assigned each KB entry a SHA-256 hash of `initial_message + "\n---\n" + resolution_reply` and performed upserts (`ON CONFLICT ("threadId") DO UPDATE`).
-    - *Rationale:* Ensures database seeding and re-indexing are completely idempotent. Rerunning setup or re-seeding consumes zero redundant embedding API calls if content has not changed.
+11. **Use a conservative retrieval threshold**
+    - **Decision:** Similarity below `0.50` escalates to Tier 1 support.
+    - **Why:** The system is allowed to be less autonomous when it lacks a sufficiently similar verified resolution.
 
-11. **Multi-Provider Resilience: Groq Primary with Gemini Fallback**
-    - *Decision:* Routed intent classification and structured generation through Groq (`openai/gpt-oss-20b`) for fast inference, with automatic failover to `gemini-3.6-flash` and 429 exponential backoff retries.
-    - *Rationale:* Groq free tier enforces an 8,000 TPM limit. Using the lightweight 20B parameter model with a 600-800 token budget prevents token cutoff during chain-of-thought generation, while the Gemini fallback ensures pipeline reliability under burst traffic.
+12. **Use SHA-256 content hashes for idempotent embedding**
+    - **Decision:** Re-indexing skips unchanged thread content and upserts changed content by `threadId`.
+    - **Why:** Reproducible setup should not spend embedding quota or create duplicates when the source has not changed.
 
-12. **Rule Heuristics Preceding LLM Escalation Judgment**
-    - *Decision:* Placed deterministic regex heuristics (legal threats, fraud mentions, compromised accounts, explicit human agent demands) ahead of the LLM escalation prompt.
-    - *Rationale:* Critical legal and security events must never depend on model probabilistic variance. If a customer mentions "lawyer" or "hacked", the system triggers an immediate deterministic escalation with a stated factual reason.
+13. **Compare against both a trivial and a no-RAG baseline**
+    - **Decision:** The harness includes a keyword/canned-response baseline and an ungrounded LLM baseline.
+    - **Why:** A RAG system needs to show value beyond a majority-class heuristic and beyond a capable model with no retrieval context.
 
-13. **Dual Escalation Confidence & Retrieval Sparsity Thresholds**
-    - *Decision:* Implemented automatic escalation if either: (a) classifier confidence falls below `0.65`, or (b) top retrieved KB similarity falls below `0.50` (50.0%).
-    - *Rationale:* Prevents the agent from hallucinating when confronted with out-of-distribution queries or novel bugs unrepresented in the historical knowledge base.
+14. **Treat LLM-as-a-judge as calibration evidence, not ground truth**
+    - **Decision:** Judge scores are reported with exact agreement, within-one agreement, and Cohen’s kappa.
+   - **Why:** Judge scores can be lenient or circular, so agreement statistics are reported alongside exact agreement, within-one agreement, and the rubric details.
 
-14. **Version-Controlled Externalized Prompts (`src/prompts/`)**
-    - *Decision:* Isolated all system instructions, few-shot prompts, and response JSON schemas into dedicated version-controlled modules (`classifyPrompt.ts`, `draftReplyPrompt.ts`, `escalatePrompt.ts`, `judgePrompt.ts`).
-    - *Rationale:* Decouples prompt engineering from backend pipeline orchestration. Allows iterating on wording, tone, and few-shots without touching tRPC routing or database logic.
-
-15. **LLM-as-a-Judge Validation via Cohen's Kappa Agreement**
-    - *Decision:* Benchmarked the LLM judge against human audit scores across Groundedness, Correctness, Tone, and Actionability to quantify inter-rater reliability.
-    - *Rationale:* Prevents circular self-grading bias. Calculating Cohen's Kappa ($\kappa$) and off-by-one agreement establishes intellectual honesty about the judge's blind spots (e.g. tendency to grade tone more leniently than humans).
-
-16. **In-Memory LRU Caching for Embeddings and Pipeline Responses**
-    - *Decision:* Implemented a generic LRU cache (`src/server/cache.ts`) with configurable TTL for two layers: (1) embedding cache (10-min TTL, 200 entries) to avoid re-embedding identical query texts, and (2) pipeline response cache (5-min TTL, 50 entries) to return cached results for identical customer messages.
-    - *Rationale:* The Groq free-tier TPM limit makes redundant API calls expensive (both in latency and token budget). Caching identical queries reduces p99 latency from ~15s to <1ms on cache hits. The TTL ensures cached responses don't become stale if the knowledge base is updated.
-
-17. **Docker Multi-Stage Build with Standalone Output**
-    - *Decision:* Configured Next.js `output: 'standalone'` and created a 3-stage Dockerfile (deps → build → production) using Node.js 22 Alpine with a non-root `nextjs` user.
-    - *Rationale:* Standalone output bundles only the necessary server files and `node_modules`, producing a minimal production image (~200MB vs ~1.5GB with full `node_modules`). The non-root user follows CIS Docker Benchmark security guidelines. Alpine base reduces attack surface.
-
-18. **Connection Pool Sizing: 10 Connections Default**
-    - *Decision:* Set `pg.Pool` max connections to 10 for the Neon serverless PostgreSQL connection.
-    - *Rationale:* Neon free-tier allows up to 100 concurrent connections, but serverless cold-start latency is optimized for smaller pools. 10 connections handles the evaluation harness (sequential with 2s pacing) and interactive web UI concurrency without exhausting Neon's connection budget.
+15. **Separate measured results from submission requirements**
+    - **Decision:** README and report label sample sizes, slices, generated labels, and limitations next to every headline metric.
+   - **Why:** Sample sizes, rubric definitions, and provenance need to stay next to headline metrics so the results can be reproduced and interpreted correctly.

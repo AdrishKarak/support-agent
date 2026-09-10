@@ -1,12 +1,14 @@
 import { z } from 'zod';
 import { publicProcedure } from '../trpc';
-import { CLASSIFY_SYSTEM_PROMPT, buildClassifyUserPrompt } from '@/prompts/classifyPrompt';
+import { buildClassifySystemPrompt, buildClassifyUserPrompt } from '@/prompts/classifyPrompt';
 import { generateGroqJson } from '@/server/llm/groq';
 import { generateGeminiJson } from '@/server/llm/gemini';
 import { INTENT_KEYS } from '@/taxonomy/intents';
+import { BRAND_KEYS, BrandKey, DEFAULT_BRAND, getBrandConfig } from '@/brands';
 
 export const ClassifyInputSchema = z.object({
   message: z.string().min(1),
+  brand: z.enum(BRAND_KEYS).default(DEFAULT_BRAND),
 });
 
 export const ClassifyOutputSchema = z.object({
@@ -17,12 +19,13 @@ export const ClassifyOutputSchema = z.object({
 
 export type ClassifyResult = z.infer<typeof ClassifyOutputSchema>;
 
-export async function classifyMessageCore(message: string): Promise<ClassifyResult> {
+export async function classifyMessageCore(message: string, brand: BrandKey = DEFAULT_BRAND): Promise<ClassifyResult> {
   const userPrompt = buildClassifyUserPrompt(message);
+  const systemPrompt = buildClassifySystemPrompt(getBrandConfig(brand));
 
   try {
     const groqResult = await generateGroqJson<ClassifyResult>(
-      CLASSIFY_SYSTEM_PROMPT,
+      systemPrompt,
       userPrompt,
       { temperature: 0.1, maxTokens: 600 }
     );
@@ -40,7 +43,7 @@ export async function classifyMessageCore(message: string): Promise<ClassifyResu
   } catch (err: any) {
     console.warn('Groq classify failed, attempting Gemini fallback:', err.message);
     const geminiResult = await generateGeminiJson<ClassifyResult>(
-      CLASSIFY_SYSTEM_PROMPT,
+      systemPrompt,
       userPrompt,
       { temperature: 0.1 }
     );
@@ -61,5 +64,5 @@ export const classifyRouter = publicProcedure
   .input(ClassifyInputSchema)
   .output(ClassifyOutputSchema)
   .mutation(async ({ input }) => {
-    return await classifyMessageCore(input.message);
+    return await classifyMessageCore(input.message, input.brand);
   });

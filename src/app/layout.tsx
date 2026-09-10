@@ -2,8 +2,8 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Spotify AI Support Agent - Production Triage & RAG System',
-  description: 'AI Customer Support Agent specialized for @SpotifyCares using Groq, Gemini, and pgvector RAG.',
+  title: 'Multi-Brand AI Support Platform',
+  description: 'AI customer support triage, grounded replies, and pgvector retrieval for multiple brands.',
 };
 
 export default function RootLayout({

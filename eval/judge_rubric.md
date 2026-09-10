@@ -1,6 +1,6 @@
 # LLM-as-a-Judge Evaluation Rubric
 
-This document defines the 4-dimension scoring rubric used to evaluate AI Customer Support responses for **Spotify** (@SpotifyCares).
+This document defines the 4-dimension scoring rubric used to evaluate AI Customer Support responses for the selected brand. The current stored evaluation artifact is Spotify-based; future Apple and Amazon evaluations should apply the same dimensions with brand-specific references.
 
 ---
 
@@ -20,7 +20,7 @@ Evaluates whether the drafted response accurately reflects facts, troubleshootin
 
 ## 2. Technical Correctness (Score: 1 - 5)
 
-Evaluates whether the advice given is technically accurate for Spotify's client software, device operating systems (iOS, Android, Desktop, Web), and account systems.
+Evaluates whether the advice given is technically accurate for the selected brand's products, device operating systems, delivery/account systems, and policies.
 
 | Score | Description | Criteria |
 |---|---|---|
@@ -34,7 +34,7 @@ Evaluates whether the advice given is technically accurate for Spotify's client 
 
 ## 3. Tone & Empathy (Score: 1 - 5)
 
-Evaluates whether the response aligns with Spotify's brand voice: friendly, conversational, calm, empathetic, and de-escalating.
+Evaluates whether the response aligns with the selected brand's support voice: friendly, conversational, calm, empathetic, and de-escalating.
 
 | Score | Description | Criteria |
 |---|---|---|

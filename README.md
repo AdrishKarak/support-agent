@@ -1,17 +1,20 @@
-# Spotify AI Customer Support Agent (`@SpotifyCares`)
+# Multi-Brand AI Customer Support Platform
+
+**Live deployment:** [support-agent-sjt3.vercel.app](https://support-agent-sjt3.vercel.app)
 
 [![CI](https://github.com/AdrishKarak/support-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/AdrishKarak/support-agent/actions)
 **Author:** Adrish Karak  
-**Domain:** Spotify Customer Care on Twitter (`@SpotifyCares`)  
+**Brands:** Spotify (`@SpotifyCares`), Apple Support (`@AppleSupport`), Amazon Help (`@AmazonHelp`)
 **Stack:** Next.js 15, TypeScript, tRPC, Prisma, Neon Serverless PostgreSQL (`pgvector`), Gemini, Groq  
 
-An end-to-end, production-grade AI Customer Support Agent specialized for Spotify's Twitter support operations. Grounded via dense semantic retrieval against historically resolved customer interactions, with deterministic safety heuristics, an empirical 9-intent taxonomy, and rigorous evaluation against trivial and zero-shot baselines.
+An end-to-end AI customer support platform with brand-isolated pgvector retrieval, dynamic prompts, deterministic safety guardrails, and a brand-aware web UI. Spotify is the default and the current evaluation artifact is Spotify-only; Apple and Amazon are supported by the runtime data contract and require separate brand-specific evaluation before quality claims are made.
 
 ---
 
 ## 📖 Table of Contents
 
 - [For Instructors / Reviewers — Quick Setup Guide](#-for-instructors--reviewers--quick-setup-guide)
+- [Assignment Deliverables](#-assignment-deliverables)
 - [Architecture & Pipeline Flow](#️-architecture--pipeline-flow)
 - [Empirical Intent Taxonomy](#️-empirical-intent-taxonomy)
 - [Benchmark Results](#-benchmark-results)
@@ -26,7 +29,7 @@ An end-to-end, production-grade AI Customer Support Agent specialized for Spotif
 
 ## 🎯 For Instructors / Reviewers — Quick Setup Guide
 
-> **Estimated Time:** ~15 minutes (including API key setup)  
+> **Estimated Time:** under 15 minutes after credentials are available
 > **Prerequisites:** Node.js 20+ (or Docker), a Neon PostgreSQL account (free tier), a Google AI Studio API key (free), and a Groq API key (free)
 
 ### Prerequisites Checklist
@@ -74,13 +77,13 @@ GROQ_API_KEY="your_groq_api_key_here"
 
 ### Step 3: Database Setup & Seeding (One Command)
 
-This applies the Prisma schema, creates the HNSW vector index, seeds the golden evaluation set (132 examples), and embeds 300 knowledge base articles:
+This applies the Prisma schema, creates the HNSW vector index, seeds the 132-record checked-in evaluation artifact, and embeds 300 knowledge-base articles:
 
 ```bash
 npm run setup
 ```
 
-> **✅ Verification:** You should see output ending with `✅ Setup complete!` and no error messages. Expected duration: ~2-3 minutes (embedding 300 articles).
+> **✅ Verification:** The schema, index, golden records, and embeddings complete without errors. Expected duration is API/network dependent; the checked-in evaluation artifacts are available for review without rerunning raw ETL.
 
 ### Step 4: Run the Unit Tests
 
@@ -98,7 +101,7 @@ npm run eval
 
 This runs the full pipeline against the golden evaluation set and prints intent accuracy, macro F1, escalation metrics, and LLM-as-a-Judge scores.
 
-> **✅ Verification:** Output shows a benchmark table with `Intent Accuracy: ~60%` and `Judge Overall: ~4.7/5.0`.
+> **✅ Verification:** The stored smoke-test artifact reports 60.0% intent accuracy and 4.70/5 judge score on a 10-record full-agent slice. Treat these as small-sample engineering evidence, not a final benchmark.
 > 
 > **⏱️ Note:** This takes ~5-10 minutes due to Groq free-tier rate limiting (8K TPM). Each evaluation item includes a 2-second pacing delay.
 
@@ -117,7 +120,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser. Use the preset test scenarios or type your own customer message to see the full pipeline in action.
 
-> **✅ Verification:** The web UI loads with a dark theme, "SPOTIFY CARES" badge, and 5 preset buttons.
+> **✅ Verification:** The web UI loads with a brand selector for Spotify, Apple Support, and Amazon Help. Switching brands changes preset handles, request payloads, and result labels.
 
 ### Step 8: Docker Deployment (Optional)
 
@@ -137,6 +140,21 @@ The app will be available at [http://localhost:3000](http://localhost:3000).
 | `npm run setup` hangs | Embedding 300 articles takes ~2-3 min. Check network connectivity to Gemini API. |
 | `tsc --noEmit` errors | Run `npm install` to ensure all type dependencies are installed. |
 | Docker build fails | Ensure Docker is installed and the daemon is running. Check `docker --version`. |
+
+---
+
+## 📦 Assignment Deliverables
+
+| Deliverable | Repository location | Status |
+|---|---|---|
+| Runnable pipeline and reproduction path | This README, `Architecture.md`, `npm run setup`, `npm run eval*` | Runnable with database and API credentials; checked-in artifacts support a fast review path |
+| Golden evaluation set | `data/processed/golden_eval_set.jsonl` | 132 curated Spotify records currently present; the labeling workflow is documented in `data/scripts/seedGoldenEvalSet.ts` |
+| Evaluation harness | `eval/runEval.ts`, `eval/metricsHelper.ts`, `eval/baselines/`, `eval/judgeHelper.ts` | Automated metrics, two baselines, and a four-dimension judge rubric are implemented |
+| Judge/human agreement | `eval/judgeVsHumanAgreement.ts`, `data/processed/judge_agreement_results.json` | 15-pair calibration artifact with rubric dimensions, agreement statistics, and reproducible scoring workflow |
+| Report | [`report/REPORT.md`](report/REPORT.md) | Problem framing, scope cuts, baselines, failure modes, misleading-number section, and next-week plan |
+| Decision log | [`DECISION_LOG.md`](DECISION_LOG.md) | 15 non-obvious decisions with rationale |
+
+The evaluation workflow is kept alongside its data artifacts so the sampling, labeling, scoring, and agreement steps are inspectable and reproducible.
 
 ---
 
@@ -174,7 +192,7 @@ Incoming Customer Tweet
 └──────────────────────────────┬──────────────────────────────┘
                                │
                                ▼
-     Typed JSON Response: { intent, reply, escalate, escalationReason, priority }
+     Typed JSON Response: { brand, intent, reply, escalate, escalationReason, priority }
 ```
 
 > 📐 **Detailed architecture diagrams:** See [`Architecture.md`](Architecture.md) and [`Diagram.md`](Diagram.md) for comprehensive Mermaid diagrams including system context, sequence diagrams, ER diagrams, and deployment architecture.
@@ -187,6 +205,7 @@ Incoming Customer Tweet
 * **Version-Controlled Externalized Prompts:** All system prompts and few-shots live in `src/prompts/`, completely decoupled from backend routing logic.
 * **Zero PII Exposure:** Numeric user IDs are scrubbed to `@user`, brand handles to `@support`, emails to `[EMAIL]`, phone numbers to `[PHONE]`, and URLs to `[LINK]`.
 * **In-Memory LRU Caching:** Embedding and pipeline response caches eliminate redundant API calls for repeated queries (cache TTL: 5-10 min).
+* **Brand Isolation:** Every KB row carries `brand` and `metadata.brand`; retrieval filters by the selected key before vector ordering, and cache keys include the brand.
 
 ---
 
@@ -208,7 +227,7 @@ Clustered from 250 real customer tweets using Gemini embeddings and K-Means ($k=
 
 ## 📊 Benchmark Results
 
-Evaluated on the held-out golden test set across three systems:
+The checked-in artifacts compare three systems, but the stored runs use different slices: full agent `n=10`, baselines `n=40`, and judge calibration `n=15`.
 
 | Metric | Trivial Baseline (Rule-Based) | Zero-Shot Baseline (No RAG) | Full Agent Pipeline | Delta vs. Best Baseline |
 |---|---|---|---|---|
@@ -223,19 +242,19 @@ Evaluated on the held-out golden test set across three systems:
 | **Judge Actionability (1-5)** | 1.40 | 2.30 | **5.00** | **+2.70 pts (+117%)** |
 | **Overall Judge Score (1-5)** | **1.93** | **2.50** | **4.70** | **+2.20 pts (+88%)** |
 
-> **Intellectual Honesty Note:** The Trivial Baseline achieved 87.5% accuracy purely because the unstratified test slice was dominated by playback keywords, but its reply quality was unacceptable (1.93/5.0). Under proper round-robin multi-class stratification, the full agent achieves **60.0% intent accuracy (Macro F1 0.50, Recall 0.6111)** while grounding via pgvector improved response quality by **+88% (from 2.50 to 4.70/5.0)**, eliminating hallucinated settings and menus. See [`report/REPORT.md`](report/REPORT.md) for full analysis.
+> **Intellectual Honesty Note:** The trivial baseline’s 87.5% accuracy comes from a class-skewed 40-record slice; its macro F1 is 0.4534 and reply score is 1.93/5. The full-agent 60.0% accuracy and 4.70/5 judge score come from a separate 10-record artifact. The retrieval hit rate is measured on a curated historical KB, not novel issues. See [`report/REPORT.md`](report/REPORT.md) for the mandatory misleading-number section.
 
 ---
 
 ## 🧑‍⚖️ Human-vs-Judge Agreement Analysis
 
-Calibration on 15 golden pairs comparing human scores against LLM judge ratings:
+The repository contains a 15-pair calibration artifact:
 * **Groundedness:** 100% within $\pm 1$ pt (6.7% exact, $\kappa = 0.0000$)
 * **Technical Correctness:** 100% within $\pm 1$ pt (33.3% exact, $\kappa = 0.0000$)
 * **Tone & Empathy:** 93.3% within $\pm 1$ pt (86.7% exact, $\kappa = 0.3023$)
 * **Actionability:** 100% within $\pm 1$ pt (13.3% exact, $\kappa = -0.0894$)
 
-*Root Cause of $\kappa \approx 0$:* Human auditors scored 4/5 when the agent requested account details in private DMs instead of resolving on Twitter. The LLM judge awarded 5/5 because requesting account details in DMs is the official verified Spotify procedure. The lack of variance in judge scores collapses Cohen's Kappa, despite 100% agreement within 1 point.
+Important provenance note: `eval/judgeVsHumanAgreement.ts` currently derives the “human” scores from reference-reply string heuristics. The agreement numbers are therefore a calibration scaffold, not evidence of real human-judge agreement. Replace this input with blind independent annotations before submission.
 
 ---
 
@@ -305,15 +324,16 @@ docker compose exec support-agent npx tsx eval/runEval.ts
 support-agent/
 ├── README.md                     # This file — setup guide & documentation
 ├── Architecture.md               # Detailed architecture with Mermaid diagrams
-├── Diagram.md                    # Comprehensive visual diagrams (8 Mermaid diagrams)
+├── Diagram.md                    # Current multi-brand visual diagrams
 ├── DECISION_LOG.md               # 15 non-obvious engineering decisions
 ├── Dockerfile                    # Multi-stage Docker build
 ├── docker-compose.yml            # Docker Compose service definition
 ├── report/
-│   └── REPORT.md                 # 6-page comprehensive empirical report
+│   └── REPORT.md                 # Assignment report and evidence caveats
 ├── prisma/
 │   └── schema.prisma             # Threads, KB vectors, golden labels, eval runs
 ├── src/
+│   ├── brands.ts                  # Canonical brand keys and prompt/UI context
 │   ├── taxonomy/
 │   │   └── intents.ts            # Single source-of-truth 9-intent taxonomy
 │   ├── prompts/
@@ -343,9 +363,9 @@ support-agent/
 │   ├── raw/                      # Raw Kaggle CSV (gitignored)
 │   ├── processed/
 │   │   ├── knowledge_base.jsonl  # 2,000 cleaned multi-turn KB threads
-│   │   ├── golden_eval_set.jsonl # 132 curated, balanced evaluation examples
+│   │   ├── golden_eval_set.jsonl # 132 curated Spotify evaluation examples
 │   │   ├── baseline_results.json # Trivial & zero-shot baseline benchmarks
-│   │   ├── judge_agreement_results.json # Human-vs-judge calibration pairs
+│   │   ├── judge_agreement_results.json # Judge agreement calibration artifact
 │   │   └── eval_results.json     # Full pipeline benchmark results
 │   └── scripts/
 │       ├── cleanAndThread.ts     # Multi-turn thread reconstruction & PII filter
@@ -377,7 +397,7 @@ support-agent/
 | `npm run setup` | Configures Neon DB, applies Prisma schema, creates HNSW index, seeds KB & eval sets | ~2-3 min |
 | `npm run eval` | Runs full agent evaluation against held-out golden set | ~5-10 min |
 | `npm run eval:baselines` | Runs trivial keyword baseline and zero-shot baseline | ~3-5 min |
-| `npm run eval:agreement` | Runs human vs. LLM-as-a-judge Cohen's Kappa analysis | ~2-3 min |
+| `npm run eval:agreement` | Runs the current judge calibration / Cohen's Kappa scaffold | ~2-3 min |
 | `npm test` | Executes 12 Jest unit tests on tRPC procedures | ~5 sec |
 | `npm run lint` | Runs Next.js ESLint checks | ~3 sec |
 | `npm run dev` | Starts Next.js development server on `http://localhost:3000` | Persistent |
@@ -393,7 +413,7 @@ support-agent/
 | **[Architecture.md](Architecture.md)** | System architecture with 6 Mermaid diagrams |
 | **[Diagram.md](Diagram.md)** | 8 comprehensive visual diagrams (pipeline, data flow, ER, escalation, deployment) |
 | **[DECISION_LOG.md](DECISION_LOG.md)** | 15 non-obvious engineering decisions with rationale |
-| **[report/REPORT.md](report/REPORT.md)** | 6-page empirical analysis report with failure mode analysis |
+| **[report/REPORT.md](report/REPORT.md)** | Assignment report with scope, results, failure modes, caveats, and next steps |
 
 ---
 
