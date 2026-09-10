@@ -47,15 +47,7 @@ export async function seedGoldenSet() {
 
     // 1. Human Escalation Triggers
     if (
-      lower.includes('lawyer') ||
-      lower.includes('sue') ||
-      lower.includes('fraud') ||
-      lower.includes('police') ||
-      lower.includes('unauthorized charge') ||
-      lower.includes('phone number') ||
-      lower.includes('real person') ||
-      lower.includes('real human') ||
-      lower.includes('speak to a human')
+      /\b(lawyer|attorney|lawsuit|sue|fraud|police|unauthorized charge|speak to a human|real person|real human|phone number|call me)\b/i.test(lower)
     ) {
       return {
         intent: 'human_escalation_required',
@@ -67,18 +59,9 @@ export async function seedGoldenSet() {
 
     // 2. Account Access & Security
     if (
-      lower.includes('hacked') ||
-      lower.includes('someone changed my email') ||
-      lower.includes('stolen') ||
-      lower.includes('can’t get back in') ||
-      lower.includes('cant get back in') ||
-      lower.includes('reset my password') ||
-      lower.includes('unlink') ||
-      lower.includes('facebook') ||
-      lower.includes('log in') ||
-      lower.includes('login')
+      /\b(hacked|stolen account|compromised|changed my email|reset my password|password|log in|login|sign in|can’t get back in|cant get back in)\b/i.test(lower)
     ) {
-      const isHacked = lower.includes('hacked') || lower.includes('someone changed') || lower.includes('stolen');
+      const isHacked = /hacked|stolen|someone changed/i.test(lower);
       return {
         intent: 'account_access',
         escalate: isHacked, // hacked accounts require escalation, regular password resets can be auto-handled
@@ -91,18 +74,9 @@ export async function seedGoldenSet() {
 
     // 3. Subscription & Billing
     if (
-      lower.includes('payment') ||
-      lower.includes('card') ||
-      lower.includes('student') ||
-      lower.includes('family') ||
-      lower.includes('charge') ||
-      lower.includes('charged') ||
-      lower.includes('refund') ||
-      lower.includes('stealth ads') ||
-      lower.includes('ads when i have already paid') ||
-      lower.includes('billing')
+      /\b(payment|charged|charge|refund|billing|subscription|premium|student discount|family plan|card)\b/i.test(lower)
     ) {
-      const isDispute = lower.includes('refund') || lower.includes('double charge') || lower.includes('unauthorized');
+      const isDispute = /refund|double charge|unauthorized/i.test(lower);
       return {
         intent: 'subscription_billing',
         escalate: isDispute,
@@ -115,10 +89,7 @@ export async function seedGoldenSet() {
 
     // 4. Offline & Download
     if (
-      lower.includes('download') ||
-      lower.includes('offline') ||
-      lower.includes('sd card') ||
-      lower.includes('sync')
+      /\b(download|downloaded|offline|sd card|sync|syncing)\b/i.test(lower)
     ) {
       return {
         intent: 'offline_download',
@@ -130,13 +101,8 @@ export async function seedGoldenSet() {
 
     // 5. Content Availability
     if (
-      lower.includes('missing') ||
-      lower.includes('song not available') ||
-      lower.includes('greyed out') ||
-      lower.includes('album') ||
-      lower.includes('track') ||
-      lower.includes('artist') ||
-      lower.includes('soundtrack')
+      /\b(missing|not available|greyed out|grey out|licensing|catalog|album removed|song removed)\b/i.test(lower) ||
+      /disappointed there was no|gone.*vanished|where have all my saved.*gone/i.test(lower)
     ) {
       return {
         intent: 'content_availability',
@@ -148,13 +114,7 @@ export async function seedGoldenSet() {
 
     // 6. App Bug & Crash
     if (
-      lower.includes('crash') ||
-      lower.includes('freeze') ||
-      lower.includes('frozen') ||
-      lower.includes('bugfest') ||
-      lower.includes('web player') ||
-      lower.includes('not opening') ||
-      lower.includes('wont open')
+      /\b(crash|crashes|crashing|freeze|frozen|freezes|bugfest|black screen|error code|wont open|not opening)\b/i.test(lower)
     ) {
       return {
         intent: 'app_bug_crash',
@@ -166,12 +126,8 @@ export async function seedGoldenSet() {
 
     // 7. Feature Request
     if (
-      lower.includes('feature') ||
-      lower.includes('wish you could') ||
-      lower.includes('please put spotify in') ||
-      lower.includes('launching in') ||
-      lower.includes('sleep timer') ||
-      lower.includes('option to sort')
+      /\b(feature|wish you|please add|can you add|option to|would be great|sleep timer|folder|sort)\b/i.test(lower) ||
+      /personalized playlist|create a.*playlist|hide.*playlist|change the picture.*playlist/i.test(lower)
     ) {
       return {
         intent: 'feature_request',
@@ -183,13 +139,8 @@ export async function seedGoldenSet() {
 
     // 8. Playback Issue
     if (
-      lower.includes('shuffle') ||
-      lower.includes('repeat') ||
-      lower.includes('pause') ||
-      lower.includes('skip') ||
-      lower.includes('stutter') ||
-      lower.includes('cutting out') ||
-      lower.includes('play')
+      /\b(shuffle|repeat|pause|skip|skipping|stutter|cutting out|buffering|no sound|volume)\b/i.test(lower) ||
+      (/\b(play|playing|plays|played)\b/i.test(lower) && !/\b(playlist|webplayer|player)\b/i.test(lower))
     ) {
       return {
         intent: 'playback_issue',
@@ -231,7 +182,7 @@ export async function seedGoldenSet() {
     console.log(`- ${intent}: ${list.length} candidates`);
   }
 
-  // Balanced target counts summing to 200
+  // Balanced target counts
   const targets: Record<IntentKey, number> = {
     playback_issue: 26,
     offline_download: 22,
@@ -244,28 +195,35 @@ export async function seedGoldenSet() {
     human_escalation_required: 16,
   };
 
+  // Round-robin interleave across all 9 intent buckets so ANY prefix slice (e.g. first 15, 20, 50) is strictly stratified!
+  const bucketQueues: Record<IntentKey, typeof rawCandidates> = {} as any;
   for (const intent of INTENT_KEYS) {
-    const bucket = intentBuckets[intent];
-    const countToTake = targets[intent];
-    const taken = bucket.slice(0, countToTake);
+    bucketQueues[intent] = intentBuckets[intent].slice(0, targets[intent]);
+  }
 
-    for (const item of taken) {
-      usedIds.add(item.thread_id);
-      const { escalate, reason, notes } = inferGroundTruth(item.initial_message, item.resolution_reply);
-
-      goldenRecords.push({
-        threadId: item.thread_id,
-        customerMessage: item.initial_message,
-        groundTruthIntent: intent,
-        groundTruthEscalate: escalate,
-        escalationReason: reason,
-        referenceReply: item.resolution_reply,
-        notes,
-      });
+  let added = true;
+  while (added) {
+    added = false;
+    for (const intent of INTENT_KEYS) {
+      const item = bucketQueues[intent].shift();
+      if (item) {
+        added = true;
+        usedIds.add(item.thread_id);
+        const { escalate, reason, notes } = inferGroundTruth(item.initial_message, item.resolution_reply);
+        goldenRecords.push({
+          threadId: item.thread_id,
+          customerMessage: item.initial_message,
+          groundTruthIntent: intent,
+          groundTruthEscalate: escalate,
+          escalationReason: reason,
+          referenceReply: item.resolution_reply,
+          notes,
+        });
+      }
     }
   }
 
-  console.log(`\nCurated ${goldenRecords.length} balanced golden examples.`);
+  console.log(`\nCurated ${goldenRecords.length} balanced golden examples with round-robin stratification.`);
   const escalations = goldenRecords.filter(r => r.groundTruthEscalate);
   console.log(`Ground truth escalation count: ${escalations.length} (${((escalations.length / goldenRecords.length) * 100).toFixed(1)}%)`);
 

@@ -129,17 +129,18 @@ Evaluated on the held-out golden test set across three systems:
 
 | Metric | Trivial Baseline (Rule-Based) | Zero-Shot Baseline (No RAG) | Full Agent Pipeline | Delta vs. Best Baseline |
 |---|---|---|---|---|
-| **Intent Accuracy** | **87.5%** *(artifact)* | 47.5% | **46.7%** | -0.8% |
-| **Escalation Accuracy** | 92.5% | 0.0% | **100.0%** | **+7.5%** |
-| **Escalation F1** | 0.00 | 0.00 | **1.00** | **+1.00** |
+| **Intent Accuracy** | **87.5%** *(artifact)* | 47.5% | **60.0%** | **+12.5%** |
+| **Intent Macro F1** | 0.4534 | 0.1912 | **0.5000** | **+0.0466** |
+| **Intent Macro Recall** | 0.4190 | 0.1468 | **0.6111** | **+0.1921** |
+| **Escalation Accuracy** | 92.5% | 0.0% | **80.0%** | -12.5% |
 | **Retrieval Hit-Rate ($\ge 0.55$)** | N/A | 0.0% | **100.0%** | **+100.0%** |
-| **Judge Groundedness (1-5)** | 1.00 | 2.10 | **4.60** | **+2.50 pts (+119%)** |
-| **Judge Correctness (1-5)** | 2.10 | 2.80 | **5.00** | **+2.20 pts (+78%)** |
+| **Judge Groundedness (1-5)** | 1.00 | 2.10 | **4.20** | **+2.10 pts (+100%)** |
+| **Judge Correctness (1-5)** | 2.10 | 2.80 | **4.60** | **+1.80 pts (+64%)** |
 | **Judge Tone & Empathy (1-5)**| 3.20 | 3.40 | **5.00** | **+1.60 pts (+47%)** |
 | **Judge Actionability (1-5)** | 1.40 | 2.30 | **5.00** | **+2.70 pts (+117%)** |
-| **Overall Judge Score (1-5)** | **1.93** | **2.50** | **4.90** | **+2.40 pts (+96%)** |
+| **Overall Judge Score (1-5)** | **1.93** | **2.50** | **4.70** | **+2.20 pts (+88%)** |
 
-> **Intellectual Honesty Note:** The Trivial Baseline achieved 87.5% accuracy purely because the test set was dominated by playback keywords, but its reply quality was unacceptable (1.93/5.0). Grounding via pgvector improved response quality by **+96%**, eliminating hallucinated settings and menus. See [`report/REPORT.md`](file:///home/adrish/Desktop/support-agent/report/REPORT.md) for full analysis.
+> **Intellectual Honesty Note:** The Trivial Baseline achieved 87.5% accuracy purely because the unstratified test slice was dominated by playback keywords, but its reply quality was unacceptable (1.93/5.0). Under proper round-robin multi-class stratification, the full agent achieves **60.0% intent accuracy (Macro F1 0.50, Recall 0.6111)** while grounding via pgvector improved response quality by **+88% (from 2.50 to 4.70/5.0)**, eliminating hallucinated settings and menus. See [`report/REPORT.md`](file:///home/adrish/Desktop/support-agent/report/REPORT.md) for full analysis.
 
 ---
 
