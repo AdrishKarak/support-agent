@@ -77,6 +77,16 @@ export async function generateGeminiJson<T>(
       const text = res.response.text();
       return JSON.parse(text) as T;
     } catch (err: any) {
+      const isAuthError =
+        err.status === 401 ||
+        err.status === 403 ||
+        err.message?.includes('401') ||
+        err.message?.includes('API key not valid') ||
+        err.message?.includes('API_KEY_INVALID');
+      if (isAuthError) {
+        throw new Error(`Gemini generation error (auth): ${err.message}`);
+      }
+
       retries--;
       if (retries === 0) {
         throw new Error(`Gemini generation error: ${err.message}`);
@@ -88,3 +98,4 @@ export async function generateGeminiJson<T>(
 
   throw new Error('Exhausted retries in generateGeminiJson');
 }
+

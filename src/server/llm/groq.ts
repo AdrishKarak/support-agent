@@ -51,6 +51,17 @@ export async function generateGroqJson<T>(
 
       return JSON.parse(content) as T;
     } catch (err: any) {
+      // Don't retry on authentication / invalid API key errors
+      const isAuthError =
+        err.status === 401 ||
+        err.status === 403 ||
+        err.message?.includes('401') ||
+        err.message?.includes('invalid_api_key') ||
+        err.message?.includes('Invalid API Key');
+      if (isAuthError) {
+        throw new Error(`Groq API error (auth): ${err.message}`);
+      }
+
       if (err.status === 429 || err.message?.includes('429') || err.message?.includes('rate_limit')) {
         retries--;
         if (retries === 0) {
@@ -70,3 +81,4 @@ export async function generateGroqJson<T>(
 
   throw new Error('Exhausted retries in generateGroqJson');
 }
+

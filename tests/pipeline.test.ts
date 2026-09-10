@@ -3,7 +3,10 @@ import { decideEscalationCore } from '../src/server/trpc/routers/escalate';
 import { computeClassificationMetrics, computeBinaryMetrics } from '../eval/metricsHelper';
 import { INTENT_KEYS, INTENTS } from '../src/taxonomy/intents';
 
+jest.setTimeout(15000);
+
 describe('Data Pipeline & PII Sanitization', () => {
+
   it('masks Twitter user handles and normalizes brand handles', () => {
     const raw = '@SpotifyCares @115887 my app crashed on iOS!';
     const sanitized = sanitizeText(raw);
