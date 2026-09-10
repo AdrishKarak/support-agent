@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { publicProcedure } from '../trpc';
 import { embedQuery } from '@/server/llm/gemini';
 import pg from 'pg';
+import { redactCustomerText } from '@/server/privacy';
 
 const { Pool } = pg;
 
@@ -21,8 +22,8 @@ function getDbPool(): pg.Pool {
 }
 
 export const RetrieveInputSchema = z.object({
-  query: z.string().min(1),
-  topK: z.number().optional().default(3),
+  query: z.string().min(1).max(1000),
+  topK: z.number().int().min(1).max(5).optional().default(3),
 });
 
 export const RetrievedThreadSchema = z.object({
@@ -47,7 +48,7 @@ export async function retrieveSimilarThreadsCore(
   const pool = getDbPool();
 
   // 1. Generate 768-dim query embedding
-  const queryEmbedding = await embedQuery(query);
+  const queryEmbedding = await embedQuery(redactCustomerText(query));
   const vectorStr = `[${queryEmbedding.join(',')}]`;
 
   // 2. Perform cosine distance search in Neon pgvector
@@ -63,12 +64,13 @@ export async function retrieveSimilarThreadsCore(
     LIMIT $2;
   `;
 
-  const res = await pool.query(queryText, [vectorStr, topK]);
+  const res = await pool.query(queryText, [vectorStr, Math.min(5, Math.max(1, Math.floor(topK)))]);
 
   const threads: RetrievedThread[] = res.rows.map(row => ({
     threadId: row.threadId,
-    initialMessage: row.initialMessage,
-    resolutionReply: row.resolutionReply,
+    // Bound context so a malformed database row cannot dominate the model prompt.
+    initialMessage: redactCustomerText(String(row.initialMessage)).slice(0, 1_000),
+    resolutionReply: redactCustomerText(String(row.resolutionReply)).slice(0, 1_500),
     similarity: Math.max(0, parseFloat(row.similarity) || 0),
   }));
 

@@ -114,18 +114,19 @@ We benchmarked three standalone systems on the held-out golden evaluation set:
 
 | Metric | Trivial Baseline | Zero-Shot Baseline | Full Agent Pipeline | Delta vs. Best Baseline |
 |---|---|---|---|---|
-| **Intent Accuracy** | **87.5%** *(artifact)* | 47.5% | **60.0%** | **+12.5%** |
-| **Intent Macro F1** | 0.4534 | 0.1912 | **0.5000** | **+0.0466** |
-| **Intent Macro Precision** | 0.5000 | 0.2857 | **0.4815** | -0.0185 |
-| **Intent Macro Recall** | 0.4190 | 0.1468 | **0.6111** | **+0.1921** |
-| **Escalation Accuracy** | 92.5% | 0.0% | **80.0%** | -12.5% |
-| **Retrieval Hit-Rate ($\ge 0.55$)** | N/A | 0.0% | **100.0%** | **+100.0%** |
-| **LLM-Judge Groundedness (1-5)** | 1.00 | 2.10 | **4.20** | **+2.10 pts (+100%)** |
-| **LLM-Judge Correctness (1-5)** | 2.10 | 2.80 | **4.60** | **+1.80 pts (+64%)** |
+| **Intent Accuracy** | **87.5%** *(artifact)* | 47.5% | **66.67%** | **+19.17%** |
+| **Intent Macro F1** | 0.4534 | 0.1912 | **0.5556** | **+0.1022** |
+| **Intent Macro Precision** | 0.5000 | 0.2857 | **0.5278** | **+0.0278** |
+| **Intent Macro Recall** | 0.4190 | 0.1468 | **0.6667** | **+0.2477** |
+| **Escalation Accuracy** | 92.5% | 0.0% | **100.0%** | **+7.5%** |
+| **Escalation F1 Score** | 0.0% | 0.0% | **100.0%** | **+100.0%** |
+| **Retrieval Hit-Rate ($\ge 0.50$)** | N/A | 0.0% | **100.0%** | **+100.0%** |
+| **LLM-Judge Groundedness (1-5)** | 1.00 | 2.10 | **4.27** | **+2.17 pts (+103%)** |
+| **LLM-Judge Correctness (1-5)** | 2.10 | 2.80 | **4.67** | **+1.87 pts (+67%)** |
 | **LLM-Judge Tone & Empathy (1-5)**| 3.20 | 3.40 | **5.00** | **+1.60 pts (+47%)** |
 | **LLM-Judge Actionability (1-5)** | 1.40 | 2.30 | **5.00** | **+2.70 pts (+117%)** |
-| **Overall Judge Score (1-5)** | **1.93** | **2.50** | **4.70** | **+2.20 pts (+88%)** |
-| **Average End-to-End Latency** | **<10 ms** | 1,850 ms | 12,000–23,764 ms | +11,000 ms |
+| **Overall Judge Score (1-5)** | **1.93** | **2.50** | **4.73** | **+2.23 pts (+89%)** |
+| **Average End-to-End Latency** | **<10 ms** | 1,850 ms | **2,127 ms** | +277 ms |
 
 ---
 

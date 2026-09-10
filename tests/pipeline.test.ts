@@ -2,6 +2,20 @@ import { sanitizeText } from '../data/scripts/cleanAndThread';
 import { decideEscalationCore } from '../src/server/trpc/routers/escalate';
 import { computeClassificationMetrics, computeBinaryMetrics } from '../eval/metricsHelper';
 import { INTENT_KEYS, INTENTS } from '../src/taxonomy/intents';
+import { redactCustomerText } from '../src/server/privacy';
+import { escalationAcknowledgement, isSafeReply, verifiedGrounding } from '../src/pipeline/trust';
+import { clearRequestQuotasForTest, takeRequestQuota } from '../src/server/rateLimit';
+
+// Unit tests must exercise fail-closed behavior without touching live providers.
+jest.mock('../src/server/llm/groq', () => ({
+  generateGroqJson: jest.fn().mockRejectedValue(new Error('provider unavailable')),
+}));
+jest.mock('../src/server/llm/gemini', () => ({
+  generateGeminiJson: jest.fn().mockRejectedValue(new Error('provider unavailable')),
+}));
+
+beforeAll(() => jest.spyOn(console, 'warn').mockImplementation(() => undefined));
+afterAll(() => jest.restoreAllMocks());
 
 jest.setTimeout(15000);
 
@@ -101,7 +115,7 @@ describe('Escalation Decision Logic (Heuristics & Rule Signals)', () => {
     expect(res.escalationReason).toContain('No sufficiently similar resolved case found in knowledge base');
   });
 
-  it('auto-handles standard issues with high confidence and solid retrieval match', async () => {
+  it('fails closed when policy review is unavailable, even for a routine issue', async () => {
     const res = await decideEscalationCore(
       'How do I clear the cache on my iPhone?',
       'app_bug_crash',
@@ -109,8 +123,51 @@ describe('Escalation Decision Logic (Heuristics & Rule Signals)', () => {
       0.88,
       'Go to Settings > Storage > Delete Cache.'
     );
-    expect(res.escalate).toBe(false);
-    expect(res.escalationReason).toContain('Auto-handled');
+    expect(res.escalate).toBe(true);
+    expect(res.escalationReason).toContain('policy review service was unavailable');
+  });
+
+  it('routes financial disputes to billing before model review', async () => {
+    const res = await decideEscalationCore(
+      'You charged me twice this month. Refund now.',
+      'subscription_billing', 0.98, 0.9, 'Here is a public reply.'
+    );
+    expect(res.escalate).toBe(true);
+    expect(res.targetTeam).toBe('billing_finance');
+  });
+});
+
+describe('Trust boundaries', () => {
+  afterEach(() => clearRequestQuotasForTest());
+
+  it('rate limits repeated requests and resets its window', () => {
+    expect(takeRequestQuota('test-client', 2, 1000, 100).allowed).toBe(true);
+    expect(takeRequestQuota('test-client', 2, 1000, 101).allowed).toBe(true);
+    expect(takeRequestQuota('test-client', 2, 1000, 102)).toMatchObject({ allowed: false, retryAfterSeconds: 1 });
+    expect(takeRequestQuota('test-client', 2, 1000, 1100).allowed).toBe(true);
+  });
+
+  it('redacts PII before the agent sees customer text', () => {
+    const safe = redactCustomerText('Email a.b@example.com, call +1 555-123-4567, or visit https://example.com/a @actual_user');
+    expect(safe).toContain('[EMAIL]');
+    expect(safe).toContain('[PHONE]');
+    expect(safe).toContain('[LINK]');
+    expect(safe).toContain('@user');
+    expect(safe).not.toContain('example.com');
+  });
+
+  it('only reports grounding sources actually retrieved', () => {
+    const result = verifiedGrounding(['real-thread', 'invented-thread', 'real-thread'], [{
+      threadId: 'real-thread', initialMessage: 'Music stops', resolutionReply: 'Restart the app', similarity: 0.81,
+    }]);
+    expect(result.sources).toEqual(['real-thread']);
+    expect(result.confidence).toBe(0.81);
+  });
+
+  it('blocks replies that request authentication or card secrets', () => {
+    expect(isSafeReply('Please share your password and verification code.')).toBe(false);
+    expect(isSafeReply('Please share the CVV on your card.')).toBe(false);
+    expect(escalationAcknowledgement('security_fraud')).toMatch(/don't share passwords/i);
   });
 });
 

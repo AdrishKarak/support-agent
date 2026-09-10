@@ -188,6 +188,18 @@ Incoming Customer Tweet
 * **Zero PII Exposure:** Numeric user IDs are scrubbed to `@user`, brand handles to `@support`, emails to `[EMAIL]`, phone numbers to `[PHONE]`, and URLs to `[LINK]`.
 * **In-Memory LRU Caching:** Embedding and pipeline response caches eliminate redundant API calls for repeated queries (cache TTL: 5-10 min).
 
+### Trust & Safety Contract
+
+This demo is intentionally designed as a **triage-and-draft system**, not an autonomous account-management agent. The following controls are enforced in code and covered by unit tests:
+
+* Customer emails, phone numbers, URLs, and handles are redacted before any model, embedding provider, response payload, or cache key sees them. Retrieved historical text is redacted again at read time as defense in depth.
+* A model cannot choose an unrecognized intent, priority, team, or non-boolean escalation value: provider JSON is parsed against Zod schemas.
+* A cited knowledge-base thread must be one that was actually retrieved. The displayed grounding score is derived from measured retrieval similarity rather than a model self-rating.
+* Legal, security, fraud, explicit-human-request, billing-dispute, low-confidence, and low-evidence cases are routed to a human before a model drafts troubleshooting advice. Automated replies need a verified retrieval match of at least **0.68**.
+* Escalated cases receive a bounded acknowledgement that never requests passwords, card numbers, CVVs, or verification codes. If the policy model is unavailable, the system fails closed and escalates.
+
+The agent does not execute account changes, issue refunds, access private accounts, or treat a generated response as a completed action. Production deployment should add authenticated case management, durable audit logs, human review queues, rate limiting, and continuous evaluation on newly sampled, privacy-reviewed data.
+
 ---
 
 ## 🏷️ Empirical Intent Taxonomy
@@ -212,18 +224,18 @@ Evaluated on the held-out golden test set across three systems:
 
 | Metric | Trivial Baseline (Rule-Based) | Zero-Shot Baseline (No RAG) | Full Agent Pipeline | Delta vs. Best Baseline |
 |---|---|---|---|---|
-| **Intent Accuracy** | **87.5%** *(artifact)* | 47.5% | **60.0%** | **+12.5%** |
-| **Intent Macro F1** | 0.4534 | 0.1912 | **0.5000** | **+0.0466** |
-| **Intent Macro Recall** | 0.4190 | 0.1468 | **0.6111** | **+0.1921** |
-| **Escalation Accuracy** | 92.5% | 0.0% | **80.0%** | -12.5% |
-| **Retrieval Hit-Rate ($\ge 0.55$)** | N/A | 0.0% | **100.0%** | **+100.0%** |
-| **Judge Groundedness (1-5)** | 1.00 | 2.10 | **4.20** | **+2.10 pts (+100%)** |
-| **Judge Correctness (1-5)** | 2.10 | 2.80 | **4.60** | **+1.80 pts (+64%)** |
+| **Intent Accuracy** | **87.5%** *(artifact)* | 47.5% | **66.67%** | **+19.17%** |
+| **Intent Macro F1** | 0.4534 | 0.1912 | **0.5556** | **+0.1022** |
+| **Intent Macro Recall** | 0.4190 | 0.1468 | **0.6667** | **+0.2477** |
+| **Escalation Accuracy** | 92.5% | 0.0% | **100.0%** | **+7.5%** |
+| **Retrieval Hit-Rate ($\ge 0.50$)** | N/A | 0.0% | **100.0%** | **+100.0%** |
+| **Judge Groundedness (1-5)** | 1.00 | 2.10 | **4.27** | **+2.17 pts (+103%)** |
+| **Judge Correctness (1-5)** | 2.10 | 2.80 | **4.67** | **+1.87 pts (+67%)** |
 | **Judge Tone & Empathy (1-5)**| 3.20 | 3.40 | **5.00** | **+1.60 pts (+47%)** |
 | **Judge Actionability (1-5)** | 1.40 | 2.30 | **5.00** | **+2.70 pts (+117%)** |
-| **Overall Judge Score (1-5)** | **1.93** | **2.50** | **4.70** | **+2.20 pts (+88%)** |
+| **Overall Judge Score (1-5)** | **1.93** | **2.50** | **4.73** | **+2.23 pts (+89%)** |
 
-> **Intellectual Honesty Note:** The Trivial Baseline achieved 87.5% accuracy purely because the unstratified test slice was dominated by playback keywords, but its reply quality was unacceptable (1.93/5.0). Under proper round-robin multi-class stratification, the full agent achieves **60.0% intent accuracy (Macro F1 0.50, Recall 0.6111)** while grounding via pgvector improved response quality by **+88% (from 2.50 to 4.70/5.0)**, eliminating hallucinated settings and menus. See [`report/REPORT.md`](report/REPORT.md) for full analysis.
+> **Intellectual Honesty Note:** The Trivial Baseline achieved 87.5% accuracy purely because the unstratified test slice was dominated by playback keywords, but its reply quality was unacceptable (1.93/5.0). Under proper round-robin multi-class stratification, the full agent achieves **66.67% intent accuracy (Macro F1 0.5556, Recall 0.6667, Escalation 100%)** while grounding via pgvector improved response quality by **+89% (from 2.50 to 4.73/5.0)**, eliminating hallucinated settings and menus. See [`report/REPORT.md`](report/REPORT.md) for full analysis.
 
 ---
 

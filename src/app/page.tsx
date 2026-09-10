@@ -63,10 +63,10 @@ const INTENT_BADGES: Record<string, { label: string; color: string }> = {
   offline_download: { label: 'Offline & Download', color: '#6366F1' },
   account_access: { label: 'Account Access', color: '#A855F7' },
   subscription_billing: { label: 'Billing & Subscriptions', color: '#EC4899' },
-  audio_quality: { label: 'Audio Quality & Devices', color: '#10B981' },
-  playlist_library: { label: 'Playlists & Library', color: '#14B8A6' },
+  content_availability: { label: 'Content Availability', color: '#10B981' },
   app_bug_crash: { label: 'App Bug & Crashes', color: '#EF4444' },
-  feature_inquiry: { label: 'Feature Inquiries', color: '#F59E0B' },
+  feature_request: { label: 'Feature Request', color: '#F59E0B' },
+  feedback_complaint: { label: 'Feedback & Complaint', color: '#14B8A6' },
   human_escalation_required: { label: 'Human Escalation', color: '#DC2626' },
 };
 
@@ -228,7 +228,7 @@ export default function Home() {
               <div style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '10px' }}>
                 <div style={{ color: '#F59E0B', fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.3rem' }}>3. Multi-Tier Escalation</div>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: '1.4' }}>
-                  Evaluates regex heuristics (legal/security/human demands), confidence thresholds (&lt;0.65), and RAG match (&lt;0.50).
+                  Blocks public advice for legal, security, billing, human-request, low-confidence, or weak-evidence cases. A 68% verified retrieval match is required for an automated reply.
                 </p>
               </div>
             </div>
@@ -263,7 +263,7 @@ export default function Home() {
           <textarea
             rows={3}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => setMessage(e.target.value.slice(0, 1000))}
             placeholder="Type a customer support message..."
             style={{
               width: '100%',

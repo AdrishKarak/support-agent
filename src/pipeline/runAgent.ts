@@ -1,7 +1,9 @@
 import { classifyMessageCore } from '../server/trpc/routers/classify';
 import { retrieveSimilarThreadsCore, RetrievedThread } from '../server/trpc/routers/retrieve';
 import { draftReplyCore } from '../server/trpc/routers/draftReply';
-import { decideEscalationCore } from '../server/trpc/routers/escalate';
+import { decideEscalationCore, deterministicEscalation } from '../server/trpc/routers/escalate';
+import { AUTO_REPLY_MIN_SIMILARITY, escalationAcknowledgement } from './trust';
+import { redactCustomerText } from '../server/privacy';
 
 export interface AgentPipelineOutput {
   customerMessage: string;
@@ -24,19 +26,53 @@ export async function runAgentPipeline(
 ): Promise<AgentPipelineOutput> {
   const startTime = Date.now();
   const topK = options.topK ?? 3;
+  const safeMessage = redactCustomerText(customerMessage);
 
   // 1 & 2. Intent Classification and Retrieval in parallel
   const [classifyRes, retrieveRes] = await Promise.all([
-    classifyMessageCore(customerMessage),
-    retrieveSimilarThreadsCore(customerMessage, topK),
+    classifyMessageCore(safeMessage),
+    retrieveSimilarThreadsCore(safeMessage, topK),
   ]);
 
+  const preflight = deterministicEscalation(
+    safeMessage,
+    classifyRes.intent,
+    classifyRes.confidence,
+    retrieveRes.topSimilarity
+  ) ?? (retrieveRes.topSimilarity < AUTO_REPLY_MIN_SIMILARITY
+    ? {
+        escalate: true,
+        escalationReason: `Evidence is insufficient for an automated reply (top verified match ${(retrieveRes.topSimilarity * 100).toFixed(1)}% < ${(AUTO_REPLY_MIN_SIMILARITY * 100).toFixed(0)}%)`,
+        priority: 'medium' as const,
+        targetTeam: 'tier_1_support' as const,
+      }
+    : null);
+
+  // Do not generate troubleshooting instructions for a case already assigned
+  // to a human or not supported by sufficiently relevant evidence.
+  if (preflight) {
+    return {
+      customerMessage: safeMessage,
+      intent: classifyRes.intent,
+      confidence: classifyRes.confidence,
+      reasoning: classifyRes.reasoning,
+      retrievedThreads: retrieveRes.threads,
+      reply: escalationAcknowledgement(preflight.targetTeam),
+      groundednessConfidence: 0,
+      escalate: true,
+      escalationReason: preflight.escalationReason,
+      priority: preflight.priority,
+      targetTeam: preflight.targetTeam,
+      latencyMs: Date.now() - startTime,
+    };
+  }
+
   // 3. Grounded Reply Drafting
-  const draftRes = await draftReplyCore(customerMessage, classifyRes.intent, retrieveRes.threads);
+  const draftRes = await draftReplyCore(safeMessage, classifyRes.intent, retrieveRes.threads);
 
   // 4. Escalation Decision
   const escalateRes = await decideEscalationCore(
-    customerMessage,
+    safeMessage,
     classifyRes.intent,
     classifyRes.confidence,
     retrieveRes.topSimilarity,
@@ -46,12 +82,12 @@ export async function runAgentPipeline(
   const latencyMs = Date.now() - startTime;
 
   return {
-    customerMessage,
+    customerMessage: safeMessage,
     intent: classifyRes.intent,
     confidence: classifyRes.confidence,
     reasoning: classifyRes.reasoning,
     retrievedThreads: retrieveRes.threads,
-    reply: draftRes.reply,
+    reply: escalateRes.escalate ? escalationAcknowledgement(escalateRes.targetTeam) : draftRes.reply,
     groundednessConfidence: draftRes.groundednessConfidence,
     escalate: escalateRes.escalate,
     escalationReason: escalateRes.escalationReason,
