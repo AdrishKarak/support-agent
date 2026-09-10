@@ -1,6 +1,7 @@
 # Spotify AI Customer Support Agent (`@SpotifyCares`)
 
 [![CI](https://github.com/AdrishKarak/support-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/AdrishKarak/support-agent/actions)
+**Link:** https://support-agent-sjt3.vercel.app
 **Author:** Adrish Karak  
 **Domain:** Spotify Customer Care on Twitter (`@SpotifyCares`)  
 **Stack:** Next.js 15, TypeScript, tRPC, Prisma, Neon Serverless PostgreSQL (`pgvector`), Gemini, Groq  
