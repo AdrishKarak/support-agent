@@ -1,0 +1,359 @@
+{
+  "sampleSize": 15,
+  "agreementSummary": {
+    "groundedness": {
+      "cohensKappa": 0,
+      "exactAgreementPct": 6.7,
+      "withinOneAgreementPct": 100
+    },
+    "correctness": {
+      "cohensKappa": 0,
+      "exactAgreementPct": 33.3,
+      "withinOneAgreementPct": 100
+    },
+    "tone": {
+      "cohensKappa": 0.3023,
+      "exactAgreementPct": 86.7,
+      "withinOneAgreementPct": 93.3
+    },
+    "actionability": {
+      "cohensKappa": -0.0894,
+      "exactAgreementPct": 13.3,
+      "withinOneAgreementPct": 100
+    }
+  },
+  "disagreements": [
+    {
+      "id": "100140",
+      "dimension": "groundedness",
+      "human": 4,
+      "judge": 5,
+      "message": "@user since your update the Play/Pause/Prev/Next buttons don’t work on my Mac?",
+      "reply": "@user Hey Geoff, help's here! Can you DM us your account's email address and username? We'll take a look backstage /LJ [LINK]",
+      "critique": "The draft reply is an exact match to the retrieved knowledge base context and the human reference resolution. \n\n1. Groundedness: It directly adopts the verified resolution steps from the KB without adding any hallucinated information or unsupported assumptions.\n2. Technical Correctness: The advice to request account details for a 'backstage' look is the correct procedural step for this specific support scenario, as indicated by the golden resolution. It avoids guessing technical fixes that might be incorrect.\n3. Tone & Empathy: The tone is warm, professional, and helpful ('Hey Geoff, help's here!'), matching the supportive brand voice required.\n4. Actionability: It provides crystal clear next steps for the customer (DM email and username) and sets expectations for the support team's action ('take a look backstage')."
+    },
+    {
+      "id": "100140",
+      "dimension": "actionability",
+      "human": 4,
+      "judge": 5,
+      "message": "@user since your update the Play/Pause/Prev/Next buttons don’t work on my Mac?",
+      "reply": "@user Hey Geoff, help's here! Can you DM us your account's email address and username? We'll take a look backstage /LJ [LINK]",
+      "critique": "The draft reply is an exact match to the retrieved knowledge base context and the human reference resolution. \n\n1. Groundedness: It directly adopts the verified resolution steps from the KB without adding any hallucinated information or unsupported assumptions.\n2. Technical Correctness: The advice to request account details for a 'backstage' look is the correct procedural step for this specific support scenario, as indicated by the golden resolution. It avoids guessing technical fixes that might be incorrect.\n3. Tone & Empathy: The tone is warm, professional, and helpful ('Hey Geoff, help's here!'), matching the supportive brand voice required.\n4. Actionability: It provides crystal clear next steps for the customer (DM email and username) and sets expectations for the support team's action ('take a look backstage')."
+    },
+    {
+      "id": "100149",
+      "dimension": "groundedness",
+      "human": 4,
+      "judge": 5,
+      "message": "@user des soucis avec la connection @user ? Impossible de me reconnecter à ma Play:1 Cc @user @user",
+      "reply": "@user Hey! We can help out in English via Twitter, but we also have French support via email at [LINK] /QI",
+      "critique": "The draft reply is identical to the Human Reference / Golden Resolution and the Past Verified Resolution found in the knowledge base. \n\n1. Groundedness: It strictly adheres to the verified facts provided in the KB context regarding language support channels.\n2. Technical Correctness: It correctly identifies the appropriate support channels for the user's language preference (French via email, English via Twitter), which is the standard procedure for this specific support scenario.\n3. Tone & Empathy: The tone is professional, concise, and helpful, matching the brand voice. It acknowledges the user's presence and provides a clear path forward.\n4. Actionability: It provides a specific, actionable next step (email link for French support) rather than vague advice, allowing the user to immediately resolve their issue in their preferred language."
+    },
+    {
+      "id": "100149",
+      "dimension": "correctness",
+      "human": 4,
+      "judge": 5,
+      "message": "@user des soucis avec la connection @user ? Impossible de me reconnecter à ma Play:1 Cc @user @user",
+      "reply": "@user Hey! We can help out in English via Twitter, but we also have French support via email at [LINK] /QI",
+      "critique": "The draft reply is identical to the Human Reference / Golden Resolution and the Past Verified Resolution found in the knowledge base. \n\n1. Groundedness: It strictly adheres to the verified facts provided in the KB context regarding language support channels.\n2. Technical Correctness: It correctly identifies the appropriate support channels for the user's language preference (French via email, English via Twitter), which is the standard procedure for this specific support scenario.\n3. Tone & Empathy: The tone is professional, concise, and helpful, matching the brand voice. It acknowledges the user's presence and provides a clear path forward.\n4. Actionability: It provides a specific, actionable next step (email link for French support) rather than vague advice, allowing the user to immediately resolve their issue in their preferred language."
+    },
+    {
+      "id": "100149",
+      "dimension": "actionability",
+      "human": 4,
+      "judge": 5,
+      "message": "@user des soucis avec la connection @user ? Impossible de me reconnecter à ma Play:1 Cc @user @user",
+      "reply": "@user Hey! We can help out in English via Twitter, but we also have French support via email at [LINK] /QI",
+      "critique": "The draft reply is identical to the Human Reference / Golden Resolution and the Past Verified Resolution found in the knowledge base. \n\n1. Groundedness: It strictly adheres to the verified facts provided in the KB context regarding language support channels.\n2. Technical Correctness: It correctly identifies the appropriate support channels for the user's language preference (French via email, English via Twitter), which is the standard procedure for this specific support scenario.\n3. Tone & Empathy: The tone is professional, concise, and helpful, matching the brand voice. It acknowledges the user's presence and provides a clear path forward.\n4. Actionability: It provides a specific, actionable next step (email link for French support) rather than vague advice, allowing the user to immediately resolve their issue in their preferred language."
+    }
+  ],
+  "pairs": [
+    {
+      "id": "100140",
+      "customerMessage": "@user since your update the Play/Pause/Prev/Next buttons don’t work on my Mac?",
+      "draftReply": "@user Hey Geoff, help's here! Can you DM us your account's email address and username? We'll take a look backstage /LJ [LINK]",
+      "retrievedContext": "Past Verified Resolution: \"@user Hey Geoff, help's here! Can you DM us your account's email address and username? We'll take a look backstage /LJ [LINK]\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeCritique": "The draft reply is an exact match to the retrieved knowledge base context and the human reference resolution. \n\n1. Groundedness: It directly adopts the verified resolution steps from the KB without adding any hallucinated information or unsupported assumptions.\n2. Technical Correctness: The advice to request account details for a 'backstage' look is the correct procedural step for this specific support scenario, as indicated by the golden resolution. It avoids guessing technical fixes that might be incorrect.\n3. Tone & Empathy: The tone is warm, professional, and helpful ('Hey Geoff, help's here!'), matching the supportive brand voice required.\n4. Actionability: It provides crystal clear next steps for the customer (DM email and username) and sets expectations for the support team's action ('take a look backstage')."
+    },
+    {
+      "id": "100146",
+      "customerMessage": "@user @user I keep getting the message \"cannot play ... the connection to Spotify was lost\", what's going on?",
+      "draftReply": "@user Hey Anthony, the cavalry's here! Does logging out, restarting your device, and logging back into Spotify help? Keep us posted /JI",
+      "retrievedContext": "Past Verified Resolution: \"@user Hey Anthony, the cavalry's here! Does logging out, restarting your device, and logging back into Spotify help? Keep us posted /JI\"",
+      "humanScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeCritique": "The draft reply is an exact match to the retrieved knowledge base context and the human reference resolution. \n\n1. GROUNDEDNESS (5): The reply directly adopts the verified troubleshooting steps (logging out, restarting, logging back in) from the provided KB thread without adding any hallucinated information.\n2. TECHNICAL CORRECTNESS (5): The advice is technically sound for Spotify connection issues. Restarting the device and re-authenticating is a standard and effective first-line fix for 'connection lost' errors.\n3. TONE & EMPATHY (5): The tone is warm, professional, and matches the specific brand voice indicated in the reference ('the cavalry's here', use of the /JI emoji). It is de-escalating and friendly.\n4. ACTIONABILITY (4): The steps are clear (log out, restart, log in). It scores a 4 rather than a 5 only because it is a general troubleshooting step rather than a specific diagnostic command, but it provides a clear path to resolution and asks for feedback, which is standard for this type of support interaction."
+    },
+    {
+      "id": "100149",
+      "customerMessage": "@user des soucis avec la connection @user ? Impossible de me reconnecter à ma Play:1 Cc @user @user",
+      "draftReply": "@user Hey! We can help out in English via Twitter, but we also have French support via email at [LINK] /QI",
+      "retrievedContext": "Past Verified Resolution: \"@user Hey! We can help out in English via Twitter, but we also have French support via email at [LINK] /QI\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 4,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeCritique": "The draft reply is identical to the Human Reference / Golden Resolution and the Past Verified Resolution found in the knowledge base. \n\n1. Groundedness: It strictly adheres to the verified facts provided in the KB context regarding language support channels.\n2. Technical Correctness: It correctly identifies the appropriate support channels for the user's language preference (French via email, English via Twitter), which is the standard procedure for this specific support scenario.\n3. Tone & Empathy: The tone is professional, concise, and helpful, matching the brand voice. It acknowledges the user's presence and provides a clear path forward.\n4. Actionability: It provides a specific, actionable next step (email link for French support) rather than vague advice, allowing the user to immediately resolve their issue in their preferred language."
+    },
+    {
+      "id": "100176",
+      "customerMessage": "@user Looks like you're down again today, won't play on my desktop in Chrome or Firefox.",
+      "draftReply": "@user Hey there, help's here! Does clearing your cache/cookies help? You might also want to try using an incognito window. Let us know how it goes /TX",
+      "retrievedContext": "Past Verified Resolution: \"@user Hey there, help's here! Does clearing your cache/cookies help? You might also want to try using an incognito window. Let us know how it goes /TX\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 4,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeCritique": "The draft reply is an exact match to the retrieved knowledge base and the golden reference resolution. \n\n1. Groundedness (5): It strictly adheres to the verified facts and troubleshooting steps provided in the context without adding hallucinations or unsupported assumptions.\n2. Technical Correctness (5): The advice to clear cache/cookies and use incognito mode is technically accurate and standard for resolving browser-based playback issues on Spotify.\n3. Tone & Empathy (5): The tone is warm, professional, and de-escalating ('Hey there, help's here!'), matching the supportive brand voice perfectly.\n4. Actionability (4): While it provides clear next steps (clear cache, try incognito), it is slightly less actionable than a 5 because it does not provide specific instructions on *how* to clear the cache in Chrome or Firefox (e.g., specific menu paths). However, for a first-line support response, this is generally considered sufficient and matches the golden standard."
+    },
+    {
+      "id": "1004832",
+      "customerMessage": "Idk why but @user s shuffle sucks ass",
+      "draftReply": "@user Hi! We’ve just made some improvements to our shuffle algorithm. We’d love to hear your feedback here: [LINK] /GK",
+      "retrievedContext": "Past Verified Resolution: \"@user Hi! We’ve just made some improvements to our shuffle algorithm. We’d love to hear your feedback here: [LINK] /GK\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 4,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeCritique": "The draft reply is an exact match to the verified knowledge base context and the golden resolution. \n\n1. Groundedness: It directly adopts the verified facts and the specific feedback link provided in the KB without adding any hallucinated information.\n2. Technical Correctness: The advice is accurate regarding the recent improvements to the shuffle algorithm and provides the correct channel for feedback.\n3. Tone & Empathy: The tone is warm, professional, and de-escalating. It acknowledges the user's complaint by offering a direct path to provide feedback, which aligns with Spotify's supportive brand voice, even in the face of a rude user comment.\n4. Actionability: It provides crystal clear next steps: the user knows exactly where to go to share their specific feedback on the shuffle algorithm."
+    },
+    {
+      "id": "1005200",
+      "customerMessage": "Disappointed there was no #Seal on @user #TBT animal playlist",
+      "draftReply": "@user Hey Chris, thanks for the feedback! Our Curation team are independent, but we’ll pass on your suggestion /GK",
+      "retrievedContext": "Past Verified Resolution: \"@user Hey Chris, thanks for the feedback! Our Curation team are independent, but we’ll pass on your suggestion /GK\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 4,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeCritique": "The draft reply is an exact match to the verified resolution and the golden reference. \n\n1. Groundedness: It strictly adheres to the retrieved knowledge base context without adding hallucinated information or contradicting established policies regarding playlist curation.\n2. Technical Correctness: The advice is accurate; it correctly identifies that curation is an independent process and that the support agent's role is to pass along feedback, which is the standard procedure for this type of request.\n3. Tone & Empathy: The tone is warm, professional, and de-escalating. It acknowledges the user's disappointment ('thanks for the feedback') and provides a clear, polite explanation of the process.\n4. Actionability: While the agent cannot directly change the playlist, the reply provides the correct next step (passing the suggestion to the Curation team) and sets appropriate expectations, which is the maximum actionable outcome for this specific type of customer request."
+    },
+    {
+      "id": "1009265",
+      "customerMessage": "Hey @user will you create a personalized playlist for me? Pretty please",
+      "draftReply": "@user Hi there! Let us know the artists or genre you love. We'll see what we can do /QI",
+      "retrievedContext": "Past Verified Resolution: \"@user Hi there! Let us know the artists or genre you love. We'll see what we can do /QI\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 4,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeCritique": "The draft reply is an exact match to the verified knowledge base context and the golden resolution. \n\n1. Groundedness: It directly adopts the verified response without adding hallucinations or unsupported assumptions.\n2. Technical Correctness: The advice is appropriate for the context (requesting user input to create a playlist) and uses the correct internal command (/QI) as seen in the reference.\n3. Tone & Empathy: The tone is warm, friendly, and professional, matching the supportive brand voice. It acknowledges the user's request positively.\n4. Actionability: It provides a clear next step for the customer (provide artists or genres), which is necessary to proceed with the request."
+    },
+    {
+      "id": "1010849",
+      "customerMessage": "Hey @user @user - is there any way to hide certain playlists that I’ll never listen to from showing up?",
+      "draftReply": "@user 1: Hey Sean, help's here! Could you give us more info about this? Are you referring to your own playlists, or those...",
+      "retrievedContext": "Past Verified Resolution: \"@user 1: Hey Sean, help's here! Could you give us more info about this? Are you referring to your own playlists, or those...\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 4,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeCritique": "The draft reply perfectly matches the retrieved knowledge base resolution. It responds in a warm, empathetic Spotify brand voice and asks a precise clarifying question necessary to provide the correct technical solution (distinguishing between personal playlists vs. algorithmic/public playlists)."
+    },
+    {
+      "id": "1011576",
+      "customerMessage": "@user or some other spotify playlist recognition function",
+      "draftReply": "@user Hey, this sounds like a great idea! Suggest it in our Community at [LINK] and get support from other users /PB",
+      "retrievedContext": "Past Verified Resolution: \"@user Hey, this sounds like a great idea! Suggest it in our Community at [LINK] and get support from other users /PB\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 4,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeCritique": "The draft reply is an exact match to the verified resolution and the human reference. It is fully grounded in the provided knowledge base context. Technically, it correctly identifies the user's input as a feature suggestion rather than a bug, and directs them to the appropriate channel (Community) for such requests. The tone is warm, enthusiastic, and professional, aligning perfectly with Spotify's brand voice. Actionability is high as it provides a specific next step (link to community) for the user to take."
+    },
+    {
+      "id": "1012752",
+      "customerMessage": "i love when i make a playlist on @user and when i click shuffle play it doesn't even play the songs on the playlist 🙂",
+      "draftReply": "@user Hey Katie, help's here! Can you DM us your account's email address? We'll see what we can suggest /JN [LINK]",
+      "retrievedContext": "Past Verified Resolution: \"@user Hey Katie, help's here! Can you DM us your account's email address? We'll see what we can suggest /JN [LINK]\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeCritique": "The draft reply is an exact match to the provided Human Reference / Golden Resolution and the Past Verified Resolution. \n\n1. Groundedness: It strictly adheres to the retrieved knowledge base context without adding any hallucinated information or unsupported assumptions.\n2. Technical Correctness: While it does not provide immediate technical troubleshooting steps (like clearing cache), it correctly identifies the standard support protocol for this specific issue type (account-specific playlist shuffle bugs) which requires backend investigation via email. This is the technically correct next step in the support workflow.\n3. Tone & Empathy: The tone is warm, professional, and matches the brand voice ('Hey Katie, help's here!'). It acknowledges the user's frustration implicitly by offering immediate assistance.\n4. Actionability: It provides a crystal clear next step for the customer: DM the account email address. This is a specific, actionable instruction that moves the ticket forward."
+    },
+    {
+      "id": "1013198",
+      "customerMessage": "@user will internet explorer at my work computer support webplayer again or is it never going to happen??",
+      "draftReply": "@user 2: In the meantime, you can use a browser that meets the requirements here: [LINK]. We hope this helps /LP",
+      "retrievedContext": "Past Verified Resolution: \"@user 2: In the meantime, you can use a browser that meets the requirements here: [LINK]. We hope this helps /LP\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 4,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 3,
+        "actionability": 3
+      },
+      "judgeCritique": "GROUNDEDNESS: The draft is identical to the verified resolution and the human reference, meaning it is fully grounded in the provided knowledge base context. It does not hallucinate any new facts or policies. CORRECTNESS: The advice is technically correct. Internet Explorer is deprecated and does not support the Spotify Web Player; directing the user to a list of supported browsers is the accurate technical solution. TONE: The tone is professional and polite ('We hope this helps'), but it is somewhat abrupt and robotic. It fails to explicitly acknowledge the user's frustration or the specific context of their work computer, which could have been handled with more empathy (e.g., 'I understand the inconvenience...'). ACTIONABILITY: The reply provides a clear path forward by linking to the requirements, but it is vague regarding the specific action the user needs to take at work (e.g., whether they can install Chrome/Edge or if they are restricted). It leaves the user to figure out the implementation details themselves."
+    },
+    {
+      "id": "1013946",
+      "customerMessage": "@user fix your awful broken shuffle",
+      "draftReply": "@user Hey there! What's happening exactly? We'd love to help /JN",
+      "retrievedContext": "Past Verified Resolution: \"@user Hey there! What's happening exactly? We'd love to help /JN\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 4,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 3
+      },
+      "judgeCritique": "The draft reply is a verbatim match to the retrieved knowledge base context and the human reference resolution, ensuring perfect groundedness and technical correctness in the context of an initial triage response. The tone is warm, professional, and de-escalating, effectively addressing the customer's frustration with a supportive brand voice. However, actionability is rated a 3 because, while it is the correct first step to gather more information, it does not provide immediate troubleshooting steps or a resolution path on its own; it relies on a follow-up interaction to actually solve the issue."
+    },
+    {
+      "id": "1015778",
+      "customerMessage": "hate @user useless crap. it sees my local files but many are grey out. what a rubbish player.",
+      "draftReply": "@user Your local files should be available once you download them to your device. Check out the link we gave above to learn more /QI",
+      "retrievedContext": "Past Verified Resolution: \"@user Your local files should be available once you download them to your device. Check out the link we gave above to learn more /QI\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 5,
+        "tone": 4,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 3,
+        "actionability": 3
+      },
+      "judgeCritique": "GROUNDEDNESS: The draft reply is identical to the retrieved knowledge base context and the human reference resolution, ensuring it is fully grounded in verified facts without hallucination. TECHNICAL CORRECTNESS: The advice that local files must be downloaded to the device to be available is technically accurate for Spotify's local file feature. TONE & EMPATHY: The tone is neutral and functional but lacks empathy. Given the customer's frustration ('hate', 'useless crap', 'rubbish'), a warmer, de-escalating opening (e.g., 'I understand this is frustrating') would be more appropriate for Spotify's brand voice. ACTIONABILITY: The instruction to 'check out the link we gave above' is vague if this is not a follow-up message in an existing thread where a link was previously provided. However, assuming the context implies a prior interaction or that the link is attached, it provides a path to resolution, though it is less direct than providing the link or specific steps immediately."
+    },
+    {
+      "id": "1015897",
+      "customerMessage": "Hey @user could you please change the picture to Louis Tomlinson and add his new song ‘just like you’ to the playlist? 😊 [LINK]",
+      "draftReply": "@user Hi! Our Curation team are independent &amp; use taste, data, research, and trends to create playlists, but we’ll pass on your suggestion /AU",
+      "retrievedContext": "Past Verified Resolution: \"@user Hi! Our Curation team are independent &amp; use taste, data, research, and trends to create playlists, but we’ll pass on your suggestion /AU\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 4,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeCritique": "The draft reply is an exact match to the provided Human Reference / Golden Resolution and the Past Verified Resolution. \n\n1. Groundedness: It strictly adheres to the retrieved knowledge base context without adding hallucinated information or contradicting policy.\n2. Technical Correctness: It accurately reflects Spotify's policy regarding editorial playlists (that curation is independent and suggestions are passed on but not guaranteed).\n3. Tone & Empathy: The tone is professional, polite, and matches the supportive brand voice, using a friendly greeting and closing.\n4. Actionability: While it does not fulfill the user's specific request (which is impossible for support to do directly), it provides the correct procedural outcome: informing the user that the suggestion has been passed on. This is the standard and correct resolution for this type of request."
+    },
+    {
+      "id": "1016539",
+      "customerMessage": "@user When asking to play a song on spotify (premium) through Google Home, it does not play more songs after it (continuous mode)",
+      "draftReply": "@user Hey! Are you controlling the Spotify app with your phone using Google Assistant? If so, which Android and Spotify version are you using? /MA",
+      "retrievedContext": "Past Verified Resolution: \"@user Hey! Are you controlling the Spotify app with your phone using Google Assistant? If so, which Android and Spotify version are you using? /MA\"",
+      "humanScores": {
+        "groundedness": 4,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 4
+      },
+      "judgeScores": {
+        "groundedness": 5,
+        "correctness": 5,
+        "tone": 5,
+        "actionability": 5
+      },
+      "judgeCritique": "The draft reply is an exact match to the retrieved knowledge base context and the human reference resolution. \n\n1. Groundedness: It strictly adheres to the verified troubleshooting steps provided in the KB, asking for specific device and app version details without adding unsupported assumptions.\n2. Technical Correctness: Asking for the Android version and Spotify app version is the correct technical first step for diagnosing integration issues between Spotify, Google Assistant, and Google Home devices.\n3. Tone & Empathy: The tone is professional, concise, and helpful, matching the standard support voice.\n4. Actionability: It provides clear next steps for the customer (providing version info) which is necessary to proceed with troubleshooting."
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+model Thread {
+  id              String   @id @default(cuid())
+  threadId        String   @unique
+  brand           String
+  initialMessage  String
+  resolutionReply String
+  turnCount       Int
+  isResolved      Boolean
+  createdAt       DateTime @default(now())
+
+  @@map("threads")
+}
+
+model KnowledgeBaseEntry {
+  id              String                    @id @default(cuid())
+  threadId        String                    @unique
+  initialMessage  String
+  resolutionReply String
+  intent          String?
+  contentHash     String
+  embedding       Unsupported("vector(768)")?
+  metadata        Json?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([contentHash])
+  @@map("knowledge_base_entries")
+}
+
+model GoldenEvalLabel {
+  id                  String   @id @default(cuid())
+  threadId            String   @unique
+  customerMessage     String
+  groundTruthIntent   String
+  groundTruthEscalate Boolean
+  escalationReason    String
+  referenceReply      String
+  notes               String?
+  createdAt           DateTime @default(now())
+
+  @@map("golden_eval_labels")
+}
+
+model EvalRun {
+  id                  String   @id @default(cuid())
+  runType             String
+  sampleSize          Int
+  intentAccuracy      Float
+  intentMacroF1       Float
+  escalationPrecision Float
+  escalationRecall    Float
+  escalationF1        Float
+  retrievalHitRate    Float?
+  judgeGroundedness   Float?
+  judgeCorrectness    Float?
+  judgeTone           Float?
+  judgeActionability  Float?
+  judgeOverallMean    Float?
+  details             Json?
+  createdAt           DateTime @default(now())
+
+  @@map("eval_runs")
+}

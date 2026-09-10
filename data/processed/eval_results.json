@@ -1,0 +1,137 @@
+{
+  "timestamp": "2026-09-10T17:23:05.317Z",
+  "sampleSize": 15,
+  "classification": {
+    "accuracy": 0.4667,
+    "macroPrecision": 0.25,
+    "macroRecall": 0.1167,
+    "macroF1": 0.1591,
+    "perClass": {
+      "account_access": {
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "support": 0
+      },
+      "content_availability": {
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "support": 0
+      },
+      "feature_request": {
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "support": 0
+      },
+      "playback_issue": {
+        "precision": 1,
+        "recall": 0.4667,
+        "f1": 0.6364,
+        "support": 15
+      }
+    }
+  },
+  "escalation": {
+    "accuracy": 1,
+    "precision": 0,
+    "recall": 0,
+    "f1": 0,
+    "truePositives": 0,
+    "falsePositives": 0,
+    "trueNegatives": 15,
+    "falseNegatives": 0
+  },
+  "retrievalHitRate": 100,
+  "avgLatencyMs": 27838,
+  "judgeScores": {
+    "groundedness": 4.6,
+    "correctness": 5,
+    "tone": 5,
+    "actionability": 5,
+    "overall": 4.9
+  },
+  "failureCases": [
+    {
+      "id": "100149",
+      "message": "@user des soucis avec la connection @user ? Impossible de me reconnecter à ma Play:1 Cc @user @user",
+      "expectedIntent": "playback_issue",
+      "predictedIntent": "account_access",
+      "expectedEscalate": false,
+      "predictedEscalate": false,
+      "escalationReason": "Auto-handled: standard login issue verified in KB with 79.8% similarity",
+      "reply": "Bonjour @user, désolé pour le désagrément. Pour vérifier votre compte, merci de nous envoyer un message privé avec l’adresse e‑mail associée à votre compte Spotify. Nous examinerons cela rapidement. En attendant, vous pouvez consulter notre FAQ sur les problèmes de connexion ici: [LINK]. Merci de votre patience!"
+    },
+    {
+      "id": "1005200",
+      "message": "Disappointed there was no #Seal on @user #TBT animal playlist",
+      "expectedIntent": "playback_issue",
+      "predictedIntent": "content_availability",
+      "expectedEscalate": false,
+      "predictedEscalate": false,
+      "escalationReason": "Auto-handled: content availability issue with 71% similarity",
+      "reply": "Hey @user, we totally get how it feels when a track you love isn’t in a playlist. Availability depends on licensing agreements, so we can’t add it right now. Check our Spotify Content page for updates: [LINK] or let us know if you’d like it added in the future. Thanks for your understanding! 🎶"
+    },
+    {
+      "id": "1009265",
+      "message": "Hey @user will you create a personalized playlist for me? Pretty please",
+      "expectedIntent": "playback_issue",
+      "predictedIntent": "feature_request",
+      "expectedEscalate": false,
+      "predictedEscalate": false,
+      "escalationReason": "Auto-handled: standard playlist creation request verified in KB with 86.3% similarity",
+      "reply": "@user Hi! We'd love to help create a personalized playlist for you. Could you let us know what kind of music you enjoy and a few favorite artists or songs? That way we can tailor it just for you. Thanks!"
+    },
+    {
+      "id": "1010849",
+      "message": "Hey @user @user - is there any way to hide certain playlists that I’ll never listen to from showing up?",
+      "expectedIntent": "playback_issue",
+      "predictedIntent": "feature_request",
+      "expectedEscalate": false,
+      "predictedEscalate": false,
+      "escalationReason": "Auto-handled: feature request with standard KB answer",
+      "reply": "Hey @user, thanks for reaching out! Currently, Spotify doesn’t have a built‑in option to hide specific playlists from your library or home feed. You can remove a playlist from your library by going to the playlist, tapping the three dots, and selecting \"Remove from Your Library.\" If you’d like a feature that lets you hide or filter playlists, we’d love to pass that feedback along to our product team. Feel free to DM us with any additional ideas!"
+    },
+    {
+      "id": "1011576",
+      "message": "@user or some other spotify playlist recognition function",
+      "expectedIntent": "playback_issue",
+      "predictedIntent": "feature_request",
+      "expectedEscalate": false,
+      "predictedEscalate": false,
+      "escalationReason": "Auto-handled: feature request with high confidence (0.92) and KB match similarity 77.8%",
+      "reply": "Hey @user, thanks for the suggestion! We love new ideas for playlist features and will pass this along to our product team. Stay tuned for updates!"
+    },
+    {
+      "id": "1013198",
+      "message": "@user will internet explorer at my work computer support webplayer again or is it never going to happen??",
+      "expectedIntent": "playback_issue",
+      "predictedIntent": "feature_request",
+      "expectedEscalate": false,
+      "predictedEscalate": false,
+      "escalationReason": "Auto-handled: standard browser support issue verified in KB with 78.5% similarity",
+      "reply": "Hi @user, thanks for reaching out! At the moment the Spotify Web Player isn’t supported on Internet Explorer. We recommend using a modern browser like Chrome, Edge, or Firefox for the best experience. We’re continuously working on improving browser support, but we don’t have a release date for IE support. If you need help setting up a supported browser, let us know!"
+    },
+    {
+      "id": "1015778",
+      "message": "hate @user useless crap. it sees my local files but many are grey out. what a rubbish player.",
+      "expectedIntent": "playback_issue",
+      "predictedIntent": "content_availability",
+      "expectedEscalate": false,
+      "predictedEscalate": false,
+      "escalationReason": "Auto-handled: content availability issue resolved with standard KB steps",
+      "reply": "Hey @user, sorry you’re seeing greyed‑out local files. That usually happens when the files aren’t in the right folder or aren’t in a supported format. Try these steps:\n1️⃣ Open the app and go to Settings > Local Files.\n2️⃣ Make sure the folder you’re pointing to contains only MP3, M4A, or WAV files.\n3️⃣ If you’ve moved the folder, click “Refresh” or restart the app.\n4️⃣ If the files still appear grey, double‑check that the folder is on a local drive (not a network share).\nIf you’re still stuck, DM us with the folder path and a few file names and we’ll dig deeper. Thanks for your patience!"
+    },
+    {
+      "id": "1015897",
+      "message": "Hey @user could you please change the picture to Louis Tomlinson and add his new song ‘just like you’ to the playlist? 😊 [LINK]",
+      "expectedIntent": "playback_issue",
+      "predictedIntent": "feature_request",
+      "expectedEscalate": false,
+      "predictedEscalate": false,
+      "escalationReason": "Auto-handled: standard playlist cover and track addition procedure verified in KB with 0.74 similarity",
+      "reply": "Hey @user! You can easily update your playlist cover and add new tracks right from the app. To change the cover, open the playlist, tap the current image (or the three dots), select \"Edit playlist\", then tap the image to choose a new one from your device or from the library. To add Louis Tomlinson’s ‘Just Like You’, search for the track, tap the three dots next to it, and choose \"Add to playlist\" > your playlist. If you need more help, check our guide: [LINK]. Happy listening!"
+    }
+  ]
+}

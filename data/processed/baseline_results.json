@@ -1,0 +1,111 @@
+{
+  "sampleSize": 40,
+  "trivialBaseline": {
+    "metrics": {
+      "accuracy": 0.875,
+      "macroPrecision": 0.5,
+      "macroRecall": 0.419,
+      "macroF1": 0.4534,
+      "perClass": {
+        "account_access": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "support": 0
+        },
+        "human_escalation_required": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "support": 0
+        },
+        "offline_download": {
+          "precision": 1,
+          "recall": 0.7143,
+          "f1": 0.8333,
+          "support": 14
+        },
+        "playback_issue": {
+          "precision": 1,
+          "recall": 0.9615,
+          "f1": 0.9804,
+          "support": 26
+        }
+      }
+    },
+    "escalation": {
+      "accuracy": 0.925,
+      "precision": 0,
+      "recall": 0,
+      "f1": 0,
+      "truePositives": 0,
+      "falsePositives": 3,
+      "trueNegatives": 37,
+      "falseNegatives": 0
+    },
+    "judgeScore": 1.93
+  },
+  "zeroShotBaseline": {
+    "metrics": {
+      "accuracy": 0.475,
+      "macroPrecision": 0.2857,
+      "macroRecall": 0.1468,
+      "macroF1": 0.1912,
+      "perClass": {
+        "account_access": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "support": 0
+        },
+        "app_bug_crash": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "support": 0
+        },
+        "content_availability": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "support": 0
+        },
+        "feature_request": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "support": 0
+        },
+        "feedback_complaint": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "support": 0
+        },
+        "offline_download": {
+          "precision": 1,
+          "recall": 0.6429,
+          "f1": 0.7826,
+          "support": 14
+        },
+        "playback_issue": {
+          "precision": 1,
+          "recall": 0.3846,
+          "f1": 0.5556,
+          "support": 26
+        }
+      }
+    },
+    "escalation": {
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1": 0,
+      "truePositives": 0,
+      "falsePositives": 40,
+      "trueNegatives": 0,
+      "falseNegatives": 0
+    },
+    "judgeScore": 2.5
+  }
+}
