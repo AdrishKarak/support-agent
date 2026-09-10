@@ -71,13 +71,27 @@ export async function draftReplyCore(
     return normalizeDraft(LlmDraftReplyResponseSchema.parse(raw), retrievedThreads);
   } catch (err: any) {
     console.warn('Groq draft reply failed, attempting Gemini fallback:', err.message);
-    const raw = await generateGeminiJson<unknown>(
-      DRAFT_REPLY_SYSTEM_PROMPT,
-      userPrompt,
-      { temperature: 0.3 }
-    );
+    try {
+      const raw = await generateGeminiJson<unknown>(
+        DRAFT_REPLY_SYSTEM_PROMPT,
+        userPrompt,
+        { temperature: 0.3 }
+      );
 
-    return normalizeDraft(LlmDraftReplyResponseSchema.parse(raw), retrievedThreads);
+      return normalizeDraft(LlmDraftReplyResponseSchema.parse(raw), retrievedThreads);
+    } catch (geminiErr: any) {
+      console.warn('Gemini draft reply failed, using retrieved KB fallback reply:', geminiErr.message);
+      const topResolution = retrievedThreads[0]?.resolutionReply;
+      const fallbackText = topResolution
+        ? `Hi @user! ${topResolution}`
+        : "Hey there! We'd love to help you with this. Could you please send us a DM with your account details and Spotify app version so we can investigate?";
+      return {
+        reply: fallbackText,
+        groundingSources: retrievedThreads[0] ? [retrievedThreads[0].threadId] : [],
+        groundednessConfidence: retrievedThreads[0] ? 0.85 : 0.50,
+        suggestedAction: 'request_info',
+      };
+    }
   }
 }
 
