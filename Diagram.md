@@ -65,7 +65,7 @@ graph TD
     CleanThreads -->|300 KB threads| EmbedKB["embedKnowledgeBase.ts"]
     EmbedKB -->|gemini-embedding-2 (768-dim)| Index["HNSW Index in Neon pgvector"]
     
-    CleanThreads -->|132 golden examples| SeedGolden["seedGoldenEvalSet.ts"]
+    CleanThreads -->|165 golden examples| SeedGolden["seedGoldenEvalSet.ts"]
     SeedGolden -->|round-robin stratification| GoldenEvalSet["Golden Eval Set"]
 ```
 
@@ -187,7 +187,7 @@ This diagram showcases the offline evaluation workflow for analyzing the agent's
 
 ```mermaid
 flowchart TD
-    LoadEval["Load Golden Eval Set (132 items)"] --> RunPipe["Run Pipeline on Each Item"]
+    LoadEval["Load Golden Eval Set (165 items)"] --> RunPipe["Run Pipeline on Each Item"]
     RunPipe --> Collect["Collect Predictions & Generated Replies"]
     
     Collect --> CompareIntent["Compare Intent vs Ground Truth"]

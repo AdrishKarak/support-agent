@@ -82,7 +82,7 @@ The data ingestion process transforms raw tweets into a curated, embedded knowle
 - **Processing:** `[cleanAndThread.ts](file:///home/adrish/Desktop/support-agent/src/scripts/cleanAndThread.ts)` reconstructs threads via graph traversal, applies regex-based PII sanitization, yielding 29,426 SpotifyCares threads.
 - **Taxonomy Building:** `[buildTaxonomy.ts](file:///home/adrish/Desktop/support-agent/src/scripts/buildTaxonomy.ts)` utilizes K-Means clustering (k=12) on a subset of 250 samples, eventually consolidated into 9 distinct intents.
 - **Vector Embedding:** `[embedKnowledgeBase.ts](file:///home/adrish/Desktop/support-agent/src/scripts/embedKnowledgeBase.ts)` embeds 300 knowledge base entries. Implements SHA-256 content hashing to ensure idempotent upserts.
-- **Evaluation Setup:** `[seedGoldenEvalSet.ts](file:///home/adrish/Desktop/support-agent/src/scripts/seedGoldenEvalSet.ts)` prepares 132 curated examples, round-robin stratified across the 9 intents for rigorous testing.
+- **Evaluation Setup:** `[seedGoldenEvalSet.ts](file:///home/adrish/Desktop/support-agent/src/scripts/seedGoldenEvalSet.ts)` prepares 165 curated examples, round-robin stratified across the 9 intents for rigorous testing.
 
 ### 3.1 Data Flow Diagram
 ```mermaid
@@ -92,7 +92,7 @@ flowchart LR
     Threads --> Cluster[buildTaxonomy.ts\nK-Means -> 9 Intents]
     Threads --> Embed[embedKnowledgeBase.ts\nGemini 768-dim\nSHA-256 Hashing]
     Embed --> KB[(Neon DB\nKnowledgeBase)]
-    Threads --> Eval[seedGoldenEvalSet.ts\n132 Curated Examples]
+    Threads --> Eval[seedGoldenEvalSet.ts\n165 Curated Examples]
     Eval --> EvalDB[(Neon DB\nEval Sets)]
 ```
 
@@ -185,7 +185,7 @@ graph TD
 ## 7. Evaluation Architecture
 
 A comprehensive evaluation suite benchmarks model performance:
-- **Golden Eval Set:** 132 stratified examples interleaving 9 intents.
+- **Golden Eval Set:** 165 stratified examples interleaving 9 intents.
 - **Baselines:** Validated against a trivial keyword baseline and a zero-shot no-RAG baseline.
 - **LLM-as-a-Judge:** Assesses performance across 4 dimensions on a 1-5 scale:
   - Groundedness

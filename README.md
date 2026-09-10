@@ -343,7 +343,7 @@ support-agent/
 │   ├── raw/                      # Raw Kaggle CSV (gitignored)
 │   ├── processed/
 │   │   ├── knowledge_base.jsonl  # 2,000 cleaned multi-turn KB threads
-│   │   ├── golden_eval_set.jsonl # 132 curated, balanced evaluation examples
+│   │   ├── golden_eval_set.jsonl # 165 curated, balanced evaluation examples
 │   │   ├── baseline_results.json # Trivial & zero-shot baseline benchmarks
 │   │   ├── judge_agreement_results.json # Human-vs-judge calibration pairs
 │   │   └── eval_results.json     # Full pipeline benchmark results

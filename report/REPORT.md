@@ -16,7 +16,7 @@ The production-grade pipeline built here features:
 1. An **empirically derived 9-intent taxonomy** clustered directly from real customer inquiries via dense embeddings ($k=12$ K-Means).
 2. A **retrieval-augmented resolution engine** powered by Neon PostgreSQL and native `pgvector`, indexing historical multi-turn troubleshooting resolutions with 768-dimensional embeddings (`gemini-embedding-2`) and HNSW cosine distance search.
 3. An **adversarial triage and escalation engine** combining deterministic safety heuristics (legal threats, account hijacking, explicit human representative demands) with dynamic confidence/sparsity thresholds and LLM-assisted policy verification.
-4. A **164-example hand-labeled golden evaluation benchmark**, benchmarked against two standalone baseline systems (a keyword/rule-based canned replier and a zero-shot ungrounded LLM).
+4. A **165-example hand-labeled golden evaluation benchmark**, benchmarked against two standalone baseline systems (a keyword/rule-based canned replier and a zero-shot ungrounded LLM).
 5. A **human-vs-judge calibration study** analyzing 15 hand-audited reply pairs to quantify LLM-as-a-judge severity biases using Cohen's Kappa ($\kappa$) and off-by-one tolerance metrics.
 
 ---
