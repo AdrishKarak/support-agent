@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { BRAND_KEYS, BRAND_CONFIGS, BrandKey, DEFAULT_BRAND } from '@/brands';
 
 interface RetrievedThread {
   threadId: string;
@@ -23,44 +22,41 @@ interface PipelineResponse {
   priority: string;
   targetTeam: string;
   latencyMs: number;
-  brand: BrandKey;
   _cached?: boolean;
 }
 
-function getPresets(handle: string, domain: string) {
-  return [
+const PRESETS = [
   {
     icon: '🎧',
-    label: domain === 'Music Streaming' ? 'Playback Bug' : 'Device Issue',
-    text: `${handle} my app and device are not working correctly after the latest software update. Help!`,
+    label: 'Playback Bug',
+    text: '@SpotifyCares my shuffle and repeat buttons are frozen on iOS after the latest app update. Help!',
   },
   {
     icon: '🔐',
     label: 'Account Hacked',
-    text: `${handle} someone hacked into my account and changed my email address to an unauthorized domain!`,
+    text: '@SpotifyCares someone hacked into my account and changed my email address to an unauthorized domain!',
   },
   {
     icon: '💳',
     label: 'Double Charge',
-    text: `${handle} I got charged twice for my subscription this month. Please issue a refund.`,
+    text: '@SpotifyCares I got charged twice for my Premium Family plan this month. Please issue a refund.',
   },
   {
     icon: '⚖️',
     label: 'Legal Threat',
-    text: `${handle} you refuse to process my cancellation. My attorney is filing an official complaint today.`,
+    text: '@SpotifyCares you refuse to process my cancellation. My attorney is filing an official FTC complaint today.',
   },
   {
     icon: '📱',
     label: 'Offline Syncing',
-    text: `${handle} my saved content keeps disappearing when I switch to offline mode.`,
+    text: '@SpotifyCares my downloaded tracks keep disappearing when I switch to offline mode on Android.',
   },
   {
     icon: '📁',
     label: 'Feature Request',
-    text: `${handle} is there any plan to improve organization and customization in the app?`,
+    text: '@SpotifyCares is there any plan to support folder organization for custom playlists in the mobile app?',
   },
-  ];
-}
+];
 
 const INTENT_BADGES: Record<string, { label: string; color: string }> = {
   playback_issue: { label: 'Playback Issue', color: '#3B82F6' },
@@ -83,10 +79,7 @@ function SpotifyIcon({ size = 28 }: { size?: number }) {
 }
 
 export default function Home() {
-  const [activeBrand, setActiveBrand] = useState<BrandKey>(DEFAULT_BRAND);
-  const brand = BRAND_CONFIGS[activeBrand];
-  const presets = getPresets(brand.handle, brand.domain);
-  const [message, setMessage] = useState(presets[0].text);
+  const [message, setMessage] = useState(PRESETS[0].text);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PipelineResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +97,7 @@ export default function Home() {
       const res = await fetch('/api/pipeline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, brand: activeBrand }),
+        body: JSON.stringify({ message }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -140,10 +133,10 @@ export default function Home() {
         <div style={{ maxWidth: '1080px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {/* Brand Logo & Name */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '1.5rem', lineHeight: 1 }} aria-hidden="true">{brand.icon}</span>
+            <SpotifyIcon size={30} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <span style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.3px' }}>
-                Multi-Brand AI Support Platform
+                Spotify AI Support Agent
               </span>
               <span style={{
                 backgroundColor: 'rgba(29, 185, 84, 0.15)',
@@ -164,23 +157,6 @@ export default function Home() {
 
           {/* Right Action Links */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#CBD5E1', fontSize: '0.8rem', fontWeight: 700 }}>
-              <span>Support brand</span>
-              <select
-                aria-label="Select support brand"
-                value={activeBrand}
-                onChange={(event) => {
-                  const nextBrand = event.target.value as BrandKey;
-                  setActiveBrand(nextBrand);
-                  setMessage(getPresets(BRAND_CONFIGS[nextBrand].handle, BRAND_CONFIGS[nextBrand].domain)[0].text);
-                  setResult(null);
-                  setError(null);
-                }}
-                style={{ backgroundColor: '#111827', color: '#F8FAFC', border: `1px solid ${brand.accent}66`, borderRadius: '8px', padding: '0.45rem 0.6rem', fontWeight: 700, cursor: 'pointer' }}
-              >
-                {BRAND_KEYS.map(key => <option key={key} value={key}>{BRAND_CONFIGS[key].icon} {BRAND_CONFIGS[key].name}</option>)}
-              </select>
-            </label>
             <button
               onClick={() => setShowExplanation(!showExplanation)}
               style={{
@@ -265,7 +241,7 @@ export default function Home() {
             AI Customer Support Triage & Retrieval
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-            Simulate incoming customer tweets to `{brand.handle}` to test intent classification, brand-isolated vector RAG retrieval, grounded reply drafting, and automated escalation safety guardrails.
+            Simulate incoming customer tweets to `@SpotifyCares` to test intent classification, vector RAG retrieval, grounded reply drafting, and automated escalation safety guardrails.
           </p>
         </div>
 
@@ -273,7 +249,7 @@ export default function Home() {
         <div className="glass-panel" style={{ padding: '1.75rem', marginBottom: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>Customer Inquiry ({brand.handle})</span>
+              <span>Customer Inquiry (@SpotifyCares)</span>
             </label>
             <span style={{
               fontSize: '0.75rem',
@@ -319,7 +295,7 @@ export default function Home() {
               Test Scenarios:
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {presets.map((p, idx) => {
+              {PRESETS.map((p, idx) => {
                 const isSelected = message === p.text;
                 return (
                   <button
@@ -593,10 +569,10 @@ export default function Home() {
             <div className="glass-panel" style={{ padding: '1.5rem', border: '1px solid rgba(29, 185, 84, 0.3)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '1.25rem' }} aria-hidden="true">{brand.icon}</span>
+                  <SpotifyIcon size={24} />
                   <div>
-                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#FFF' }}>{brand.name}</span>
-                    <span style={{ fontSize: '0.775rem', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>{brand.handle}</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#FFF' }}>Spotify Cares</span>
+                    <span style={{ fontSize: '0.775rem', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>@SpotifyCares</span>
                   </div>
                 </div>
 
@@ -704,7 +680,7 @@ export default function Home() {
                           <strong style={{ color: '#9CA3AF' }}>Customer Query:</strong> {t.initialMessage}
                         </div>
                         <div style={{ color: '#F3F4F6' }}>
-                          <strong style={{ color: brand.accent }}>Verified {brand.name} Resolution:</strong> {t.resolutionReply}
+                          <strong style={{ color: '#1DB954' }}>Verified Spotify Resolution:</strong> {t.resolutionReply}
                         </div>
                       </div>
                     </div>

@@ -1,9 +1,8 @@
 import { z } from 'zod';
 import { publicProcedure } from '../trpc';
-import { buildEscalateSystemPrompt, buildEscalateUserPrompt } from '@/prompts/escalatePrompt';
+import { ESCALATE_SYSTEM_PROMPT, buildEscalateUserPrompt } from '@/prompts/escalatePrompt';
 import { generateGroqJson } from '@/server/llm/groq';
 import { generateGeminiJson } from '@/server/llm/gemini';
-import { BRAND_KEYS, BrandKey, DEFAULT_BRAND, getBrandConfig } from '@/brands';
 
 export const EscalateInputSchema = z.object({
   customerMessage: z.string().min(1),
@@ -11,7 +10,6 @@ export const EscalateInputSchema = z.object({
   intentConfidence: z.number(),
   topSimilarity: z.number().default(0),
   draftReply: z.string().default(''),
-  brand: z.enum(BRAND_KEYS).default(DEFAULT_BRAND),
 });
 
 export const EscalateOutputSchema = z.object({
@@ -35,8 +33,7 @@ export async function decideEscalationCore(
   intent: string,
   intentConfidence: number,
   topSimilarity: number,
-  draftReply: string,
-  brand: BrandKey = DEFAULT_BRAND
+  draftReply: string
 ): Promise<EscalateResult> {
   const lowerMsg = customerMessage.toLowerCase();
 
@@ -111,11 +108,10 @@ export async function decideEscalationCore(
 
   // 7. LLM Escalation Judgment for nuanced cases (e.g. repeated failure, tone, customer frustration)
   const userPrompt = buildEscalateUserPrompt(customerMessage, intent, intentConfidence, topSimilarity, draftReply);
-  const systemPrompt = buildEscalateSystemPrompt(getBrandConfig(brand));
 
   try {
     const llmRes = await generateGroqJson<LlmEscalateResponse>(
-      systemPrompt,
+      ESCALATE_SYSTEM_PROMPT,
       userPrompt,
       { temperature: 0.1, maxTokens: 600 }
     );
@@ -130,7 +126,7 @@ export async function decideEscalationCore(
     console.warn('Groq escalate failed, attempting Gemini fallback:', err.message);
     try {
       const geminiRes = await generateGeminiJson<LlmEscalateResponse>(
-        systemPrompt,
+        ESCALATE_SYSTEM_PROMPT,
         userPrompt,
         { temperature: 0.1 }
       );
@@ -162,7 +158,6 @@ export const escalateRouter = publicProcedure
       input.intent,
       input.intentConfidence,
       input.topSimilarity,
-      input.draftReply,
-      input.brand
+      input.draftReply
     );
   });

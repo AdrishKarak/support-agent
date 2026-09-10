@@ -2,10 +2,8 @@ import { classifyMessageCore } from '../server/trpc/routers/classify';
 import { retrieveSimilarThreadsCore, RetrievedThread } from '../server/trpc/routers/retrieve';
 import { draftReplyCore } from '../server/trpc/routers/draftReply';
 import { decideEscalationCore } from '../server/trpc/routers/escalate';
-import { BrandKey, DEFAULT_BRAND, getBrandConfig, isBrandKey } from '../brands';
 
 export interface AgentPipelineOutput {
-  brand: BrandKey;
   customerMessage: string;
   intent: string;
   confidence: number;
@@ -22,22 +20,19 @@ export interface AgentPipelineOutput {
 
 export async function runAgentPipeline(
   customerMessage: string,
-  brand: string = DEFAULT_BRAND,
   options: { topK?: number } = {}
 ): Promise<AgentPipelineOutput> {
   const startTime = Date.now();
   const topK = options.topK ?? 3;
-  const selectedBrand = isBrandKey(brand) ? brand : DEFAULT_BRAND;
-  getBrandConfig(selectedBrand);
 
   // 1 & 2. Intent Classification and Retrieval in parallel
   const [classifyRes, retrieveRes] = await Promise.all([
-    classifyMessageCore(customerMessage, selectedBrand),
-    retrieveSimilarThreadsCore(customerMessage, topK, selectedBrand),
+    classifyMessageCore(customerMessage),
+    retrieveSimilarThreadsCore(customerMessage, topK),
   ]);
 
   // 3. Grounded Reply Drafting
-  const draftRes = await draftReplyCore(customerMessage, classifyRes.intent, retrieveRes.threads, selectedBrand);
+  const draftRes = await draftReplyCore(customerMessage, classifyRes.intent, retrieveRes.threads);
 
   // 4. Escalation Decision
   const escalateRes = await decideEscalationCore(
@@ -45,14 +40,12 @@ export async function runAgentPipeline(
     classifyRes.intent,
     classifyRes.confidence,
     retrieveRes.topSimilarity,
-    draftRes.reply,
-    selectedBrand
+    draftRes.reply
   );
 
   const latencyMs = Date.now() - startTime;
 
   return {
-    brand: selectedBrand,
     customerMessage,
     intent: classifyRes.intent,
     confidence: classifyRes.confidence,

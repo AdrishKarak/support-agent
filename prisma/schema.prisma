@@ -26,7 +26,6 @@ model Thread {
 model KnowledgeBaseEntry {
   id              String                    @id @default(cuid())
   threadId        String                    @unique
-  brand           String
   initialMessage  String
   resolutionReply String
   intent          String?
