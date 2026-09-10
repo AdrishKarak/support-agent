@@ -74,7 +74,7 @@ GROQ_API_KEY="your_groq_api_key_here"
 
 ### Step 3: Database Setup & Seeding (One Command)
 
-This applies the Prisma schema, creates the HNSW vector index, seeds the golden evaluation set (132 examples), and embeds 300 knowledge base articles:
+This applies the Prisma schema, creates the HNSW vector index, seeds the golden evaluation set (165 curated examples), and embeds 300 knowledge base articles:
 
 ```bash
 npm run setup
